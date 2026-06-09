@@ -18,6 +18,45 @@ interface MessageViewerProps {
 }
 
 export default function MessageViewer({ selectedMessage }: MessageViewerProps) {
+  const [sanitizedHtml, setSanitizedHtml] = React.useState("");
+
+  React.useEffect(() => {
+    if (!selectedMessage?.bodyHtml) {
+      setSanitizedHtml("");
+      return;
+    }
+
+    let isMounted = true;
+    import("dompurify").then((module) => {
+      if (!isMounted) return;
+      const DOMPurify = module.default;
+      const clean = DOMPurify.sanitize(selectedMessage.bodyHtml, {
+        ALLOWED_TAGS: [
+          "p", "br", "b", "i", "em", "strong", "u", "s", "strike",
+          "h1", "h2", "h3", "h4", "h5", "h6",
+          "ul", "ol", "li", "blockquote", "pre", "code",
+          "a", "img",
+          "table", "thead", "tbody", "tr", "th", "td",
+          "div", "span", "hr",
+        ],
+        ALLOWED_ATTR: [
+          "href", "src", "alt", "title", "width", "height",
+          "style", "class", "target", "rel",
+          "colspan", "rowspan",
+        ],
+        ALLOWED_URI_REGEXP: /^(?:https?|mailto|ftp):/i,
+        ADD_ATTR: ["rel"],
+        SANITIZE_DOM: true,
+        WHOLE_DOCUMENT: false,
+      });
+      setSanitizedHtml(clean);
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedMessage?.bodyHtml]);
+
   return (
     <div className="flex-grow flex flex-col bg-[#0B0D10] h-full overflow-hidden relative">
       <AnimatePresence mode="wait">
@@ -57,7 +96,7 @@ export default function MessageViewer({ selectedMessage }: MessageViewerProps) {
               {selectedMessage.bodyHtml ? (
                 <div
                   dangerouslySetInnerHTML={{
-                    __html: selectedMessage.bodyHtml,
+                    __html: sanitizedHtml,
                   }}
                   className="prose prose-invert max-w-none text-sm leading-relaxed text-neutral-300"
                 />
