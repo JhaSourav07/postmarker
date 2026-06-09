@@ -35,10 +35,10 @@ export default function RootLayout({
               Postmarker
             </a>
             <a 
-              href="#view-conversation" 
+              href="/inbox" 
               className="text-sm font-medium text-[#A2A8B3] hover:text-[#F8F8F8] transition-colors"
             >
-              View Conversation
+              Inbox
             </a>
           </div>
         </header>

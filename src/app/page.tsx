@@ -17,13 +17,6 @@ export default function Home() {
   const [generatedToken, setGeneratedToken] = useState("");
   const [isCopied, setIsCopied] = useState(false);
 
-  // View Conversation State
-  const [tokenInput, setTokenInput] = useState("");
-  const [isAccessing, setIsAccessing] = useState(false);
-  const [unlockedThread, setUnlockedThread] = useState(false);
-  const [messages, setMessages] = useState<any[]>([]);
-  const [tempEmail, setTempEmail] = useState("");
-
   // Handle Live Send
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,38 +55,6 @@ export default function Home() {
     navigator.clipboard.writeText(generatedToken);
     setIsCopied(true);
     setTimeout(() => setIsCopied(false), 2000);
-  };
-
-  // Handle Open Conversation via API
-  const handleOpenConversation = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!tokenInput) return;
-
-    setIsAccessing(true);
-    try {
-      const response = await fetch(`/api/inbox?token=${tokenInput.trim()}`);
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Conversation not found or expired.");
-      }
-
-      setMessages(data.messages);
-      setTempEmail(data.thread.tempEmail);
-      setUnlockedThread(true);
-
-      // Smooth scroll to the showcase section
-      setTimeout(() => {
-        const showcase = document.getElementById("showcase-section");
-        if (showcase) {
-          showcase.scrollIntoView({ behavior: "smooth" });
-        }
-      }, 100);
-    } catch (err: any) {
-      alert(err.message || "Failed to retrieve conversation.");
-    } finally {
-      setIsAccessing(false);
-    }
   };
 
   return (
@@ -316,125 +277,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* SHOWCASE SECTION: Mock Conversation Thread */}
-        <section
-          id="showcase-section"
-          className="w-full py-24 border-t border-[rgba(255,255,255,0.05)] flex flex-col items-center"
-        >
-          <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight mb-4">
-            Showcase
-          </h2>
-          <p className="text-sm text-[#A2A8B3] mb-12">
-            {unlockedThread
-              ? "Conversation unlocked using your token."
-              : "A live view of conversation replies."}
-          </p>
 
-          <div className="w-full max-w-xl bg-[#111418]/40 border border-[rgba(255,255,255,0.08)] rounded-2xl p-6 sm:p-8 backdrop-blur-sm relative overflow-hidden shadow-xl">
-            {/* Header info */}
-            <div className="flex items-center justify-between border-b border-[rgba(255,255,255,0.06)] pb-4 mb-6">
-              <div className="flex flex-col col-span-2">
-                <span className="text-xs text-[#A2A8B3]">Conversation Thread</span>
-                <span className="text-sm font-medium text-[#F8F8F8] font-mono select-all truncate">
-                  {unlockedThread ? `Inbox Address: ${tempEmail}` : "Preview Mode"}
-                </span>
-              </div>
-              <span className="text-xs px-2 py-1 rounded bg-[#161A20] text-indigo-400 border border-indigo-500/20">
-                Active
-              </span>
-            </div>
-
-            {/* Conversation Flow */}
-            <div className="space-y-6">
-              {!unlockedThread ? (
-                <>
-                  {/* Message 1 (You) */}
-                  <div className="flex flex-col items-end">
-                    <span className="text-xs text-[#A2A8B3] mb-1.5 mr-2">You</span>
-                    <div className="bg-[#161A20] border border-[rgba(255,255,255,0.08)] text-[#F8F8F8] px-4 py-3 rounded-2xl rounded-tr-sm max-w-[85%] text-sm">
-                      Hello John
-                    </div>
-                  </div>
-
-                  {/* Message 2 (John) */}
-                  <div className="flex flex-col items-start">
-                    <span className="text-xs text-[#A2A8B3] mb-1.5 ml-2">John</span>
-                    <div className="bg-[#F8F8F8] text-[#0B0D10] px-4 py-3 rounded-2xl rounded-tl-sm max-w-[85%] text-sm font-normal">
-                      Hello back
-                    </div>
-                  </div>
-                </>
-              ) : messages.length === 0 ? (
-                <div className="text-center text-xs text-[#A2A8B3] py-8">
-                  No replies received yet. Send the temporary address to someone and refresh.
-                </div>
-              ) : (
-                messages.map((msg) => {
-                  const isSentFromTemp = msg.from.toLowerCase().includes(tempEmail.toLowerCase());
-                  return (
-                    <div
-                      key={msg.id}
-                      className={`flex flex-col ${
-                        isSentFromTemp ? "items-end" : "items-start"
-                      }`}
-                    >
-                      <span className="text-xs text-[#A2A8B3] mb-1.5 mx-2">
-                        {isSentFromTemp ? "You" : msg.from.split("<")[0].trim()}
-                      </span>
-                      <div
-                        className={`px-4 py-3 rounded-2xl max-w-[85%] text-sm ${
-                          isSentFromTemp
-                            ? "bg-[#161A20] border border-[rgba(255,255,255,0.08)] text-[#F8F8F8] rounded-tr-sm"
-                            : "bg-[#F8F8F8] text-[#0B0D10] rounded-tl-sm font-normal"
-                        }`}
-                      >
-                        {msg.bodyText || msg.subject}
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </div>
-        </section>
-
-        {/* VIEW CONVERSATION CARD / MODAL MOCKUP */}
-        <section
-          id="view-conversation"
-          className="w-full py-24 border-t border-[rgba(255,255,255,0.05)] flex flex-col items-center"
-        >
-          <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight mb-12">
-            Retrieve replies
-          </h2>
-
-          <div className="w-full max-w-md bg-[#111418] border border-[rgba(255,255,255,0.08)] rounded-2xl p-6 sm:p-8 shadow-xl">
-            <h3 className="text-lg font-medium text-[#F8F8F8] mb-2">
-              Enter Secret Token
-            </h3>
-            <p className="text-xs text-[#A2A8B3] mb-6 leading-relaxed">
-              Use the token generated when you sent the message.
-            </p>
-
-            <form onSubmit={handleOpenConversation} className="space-y-4">
-              <input
-                type="text"
-                required
-                placeholder="TMP-XXXX-XXXX-XXXX"
-                value={tokenInput}
-                onChange={(e) => setTokenInput(e.target.value)}
-                className="w-full bg-[#161A20] border border-[rgba(255,255,255,0.08)] text-[#F8F8F8] px-4 py-3 rounded-lg placeholder-neutral-700 outline-none focus:border-neutral-500 focus:placeholder-neutral-500 transition-colors text-sm font-mono text-center tracking-wider"
-              />
-
-              <button
-                type="submit"
-                disabled={isAccessing}
-                className="w-full bg-[#F8F8F8] text-[#0B0D10] font-medium py-3 rounded-lg hover:bg-neutral-200 transition-colors text-sm"
-              >
-                {isAccessing ? "Authenticating Token..." : "Open Conversation"}
-              </button>
-            </form>
-          </div>
-        </section>
       </div>
 
       {/* SUCCESS TOKEN MODAL OVERLAY */}
