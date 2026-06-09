@@ -7,17 +7,21 @@ const ease = [0.16, 1, 0.3, 1] as const;
 
 export default function CreateThreadPage() {
   // States to track input and creation feedback
-  const [email, setEmail] = useState("");
+  const [to, setTo] = useState("");
+  const [subject, setSubject] = useState("");
+  const [message, setMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successData, setSuccessData] = useState<{
+    token: string;
     tempEmail: string;
     expiresAt: string;
   } | null>(null);
+  const [isCopied, setIsCopied] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) return;
+    if (!to || !subject || !message) return;
 
     setIsSending(true);
     setErrorMessage("");
@@ -28,18 +32,24 @@ export default function CreateThreadPage() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ to, subject, message }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Failed to create temporary inbox.");
+        throw new Error(data.error || "Failed to send anonymous email.");
       }
 
+      // Format token for standard display TMP-ABCD-EFGH-IJKL
+      const token = data.token;
+      
       setSuccessData({
+        token,
         tempEmail: data.tempEmail,
-        expiresAt: new Date(data.expiresAt).toLocaleTimeString([], {
+        expiresAt: new Date(data.expiresAt).toLocaleDateString([], {
+          month: "short",
+          day: "numeric",
           hour: "2-digit",
           minute: "2-digit",
         }),
@@ -49,6 +59,13 @@ export default function CreateThreadPage() {
     } finally {
       setIsSending(false);
     }
+  };
+
+  const handleCopyToken = () => {
+    if (!successData) return;
+    navigator.clipboard.writeText(successData.token);
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 2000);
   };
 
   return (
@@ -75,10 +92,10 @@ export default function CreateThreadPage() {
             >
               <div className="mb-8 text-center">
                 <h2 className="text-2xl font-semibold text-[#F8F8F8] mb-2">
-                  Create Temporary Inbox
+                  Send Anonymous Email
                 </h2>
                 <p className="text-xs text-[#A2A8B3]">
-                  Enter your real email address. We will send you an access link to view your temporary inbox dashboard.
+                  Start an untraceable, secure conversation thread.
                 </p>
               </div>
 
@@ -89,18 +106,45 @@ export default function CreateThreadPage() {
               )}
 
               <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Email Field */}
+                {/* To Field */}
                 <div className="flex flex-col sm:flex-row sm:items-center border-b border-[rgba(255,255,255,0.06)] pb-4 gap-2">
                   <label className="text-sm font-medium text-[#A2A8B3] w-20">
-                    Email
+                    To
                   </label>
                   <input
                     type="email"
                     required
-                    placeholder="user@yourdomain.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="recipient@example.com"
+                    value={to}
+                    onChange={(e) => setTo(e.target.value)}
                     className="flex-grow bg-transparent text-sm text-[#F8F8F8] placeholder-neutral-700 outline-none w-full"
+                  />
+                </div>
+
+                {/* Subject Field */}
+                <div className="flex flex-col sm:flex-row sm:items-center border-b border-[rgba(255,255,255,0.06)] pb-4 gap-2">
+                  <label className="text-sm font-medium text-[#A2A8B3] w-20">
+                    Subject
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Secret message"
+                    value={subject}
+                    onChange={(e) => setSubject(e.target.value)}
+                    className="flex-grow bg-transparent text-sm text-[#F8F8F8] placeholder-neutral-700 outline-none w-full"
+                  />
+                </div>
+
+                {/* Message Field */}
+                <div className="flex flex-col gap-2">
+                  <textarea
+                    required
+                    rows={6}
+                    placeholder="Write your email anonymously..."
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    className="w-full bg-transparent text-sm text-[#F8F8F8] placeholder-neutral-700 outline-none resize-none pt-2"
                   />
                 </div>
 
@@ -109,9 +153,9 @@ export default function CreateThreadPage() {
                   <button
                     type="submit"
                     disabled={isSending}
-                    className="bg-[#F8F8F8] text-[#0B0D10] font-medium px-6 py-3 rounded-lg hover:bg-neutral-200 transition-colors text-sm disabled:opacity-50"
+                    className="bg-[#F8F8F8] text-[#0B0D10] font-medium px-6 py-3 rounded-lg hover:bg-neutral-200 transition-colors text-sm disabled:opacity-50 cursor-pointer"
                   >
-                    {isSending ? "Creating Inbox..." : "Create Temporary Inbox"}
+                    {isSending ? "Sending Securely..." : "Send Anonymous Email"}
                   </button>
                 </div>
               </form>
@@ -126,25 +170,33 @@ export default function CreateThreadPage() {
               className="text-center py-4"
             >
               <span className="text-indigo-400 text-xs font-semibold tracking-wider uppercase block mb-2">
-                Inbox Provisioned
+                Email Sent Successfully
               </span>
               <h2 className="text-2xl font-semibold text-[#F8F8F8] mb-6">
-                Check Your Email
+                Access Key Generated
               </h2>
 
               <p className="text-sm text-[#A2A8B3] mb-8 leading-relaxed max-w-sm mx-auto">
-                We have generated your temporary email address and sent your private dashboard access link to <strong className="text-[#F8F8F8]">{email}</strong>.
+                Your email has been dispatched from your temporary email address: <strong className="text-[#F8F8F8] block mt-1 font-mono">{successData.tempEmail}</strong>
               </p>
 
-              {/* Temporary Address Box */}
-              <div className="bg-[#161A20] border border-[rgba(255,255,255,0.08)] rounded-lg py-4 px-2 mb-6 select-all">
-                <span className="font-mono text-base text-[#F8F8F8] tracking-wider">
-                  {successData.tempEmail}
+              {/* Token Display Box */}
+              <div className="bg-[#161A20] border border-[rgba(255,255,255,0.08)] rounded-lg py-4 px-2 mb-8 select-all">
+                <span className="font-mono text-lg text-[#F8F8F8] tracking-wider">
+                  {successData.token}
                 </span>
               </div>
 
-              <div className="text-xs text-[#A2A8B3] border-t border-[rgba(255,255,255,0.06)] pt-6">
-                This temporary address will auto-destruct at <span className="text-[#F8F8F8]">{successData.expiresAt}</span>.
+              {/* Copy Button */}
+              <button
+                onClick={handleCopyToken}
+                className="w-full bg-[#F8F8F8] text-[#0B0D10] font-medium py-3 rounded-lg hover:bg-neutral-200 transition-all text-sm mb-3 flex items-center justify-center gap-2 cursor-pointer"
+              >
+                {isCopied ? "Copied to Clipboard" : "Copy Token"}
+              </button>
+
+              <div className="text-xs text-[#A2A8B3] border-t border-[rgba(255,255,255,0.06)] pt-6 mt-6">
+                This thread and all replies will auto-destruct on <span className="text-[#F8F8F8]">{successData.expiresAt}</span>.
               </div>
             </motion.div>
           )}
