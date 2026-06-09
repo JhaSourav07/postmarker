@@ -83,20 +83,41 @@ export class ImapService {
         if (byHeader2Arr.length > 0) candidateUids = byHeader2Arr;
       }
 
-      // Strategy 3: subject contains threadId
+      // Strategy 3: Search by the explicit TO alias address
+      if (candidateUids.length === 0) {
+        const byTo = await client.search({ to: tempEmail });
+        const byToArr = Array.isArray(byTo) ? byTo : [];
+        console.log(`[IMAP Sync] S3 (TO alias): ${byToArr.length} hits`);
+        if (byToArr.length > 0) candidateUids = byToArr;
+      }
+
+      // Strategy 4: Search by subject contains threadId (if subject was somehow modified)
       if (candidateUids.length === 0) {
         const bySubject = await client.search({ subject: threadId });
         const bySubjectArr = Array.isArray(bySubject) ? bySubject : [];
-        console.log(`[IMAP Sync] S3 (subject): ${bySubjectArr.length} hits`);
+        console.log(`[IMAP Sync] S4 (subject): ${bySubjectArr.length} hits`);
         if (bySubjectArr.length > 0) candidateUids = bySubjectArr;
       }
 
-      // Strategy 4: scan last 50 UNSEEN emails by envelope (alias match)
+      // Strategy 5: scan last 50 emails (regardless of UNSEEN) to catch opened emails
       if (candidateUids.length === 0) {
-        const allUids = await client.search({ seen: false });
+        // Fetch the UIDs of the 50 most recent emails in the mailbox
+        const seqStatus = await client.status("INBOX", { messages: true });
+        const total = seqStatus.messages || 0;
+        let recent: number[] = [];
+        
+        if (total > 0) {
+          const start = Math.max(1, total - 49);
+          // fetch UIDs for sequence range start:*
+          for (let i = start; i <= total; i++) {
+             recent.push(i); // This is sequence number, we need UID. Actually, let's just do a SEARCH ALL and slice.
+          }
+        }
+        
+        const allUids = await client.search({ all: true });
         const allUidsArr = Array.isArray(allUids) ? allUids : [];
-        const recent = allUidsArr.slice(-50);
-        console.log(`[IMAP Sync] S4 scanning ${recent.length} recent UNSEEN emails`);
+        recent = allUidsArr.slice(-50);
+        console.log(`[IMAP Sync] S5 scanning ${recent.length} recent emails`);
 
         const baseUser = (user || "").split("@")[0].toLowerCase();
         const aliasLocal = tempEmail.split("@")[0].toLowerCase();
