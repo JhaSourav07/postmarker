@@ -22,7 +22,7 @@ export class EmailService {
       to: toEmail,
       subject: "Your Temporary PostMarker Inbox is Ready!",
       text: `Hello,\n\nYour temporary inbox for ${tempEmail} has been created.\n\nYou can access your inbox dashboard and view messages at the following link:\n${inboxLink}\n\nThis link is active for 24 hours. After that, your inbox and all messages will be automatically deleted.\n\nBest regards,\nPostMarker Team`,
-      html: `
+      html: `https://postmarker.vercel.app/
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
           <h2 style="color: #0f172a; margin-top: 0;">PostMarker Temporary Inbox</h2>
           <p style="color: #334155; font-size: 16px;">Your temporary email address is ready for use:</p>

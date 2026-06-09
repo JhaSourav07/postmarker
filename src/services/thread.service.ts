@@ -7,6 +7,7 @@ import {
 import Thread, { IThread } from "../models/Thread";
 import Message, { IMessage } from "../models/Message";
 import { transporter } from "../lib/email";
+import { escapeHtml } from "../lib/validators";
 
 export interface CreateThreadOptions {
   recipientEmail: string;
@@ -77,10 +78,10 @@ export class ThreadService {
       text: options.message,
       html: `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid rgba(0,0,0,0.08); border-radius: 8px;">
-          <p style="color: #334155; font-size: 15px; white-space: pre-wrap; line-height: 1.6;">${options.message}</p>
+          <p style="color: #334155; font-size: 15px; white-space: pre-wrap; line-height: 1.6;">${escapeHtml(options.message)}</p>
           <div style="margin-top: 32px; padding-top: 16px; border-top: 1px solid #e2e8f0; font-size: 12px; color: #64748b;">
-            This email was sent anonymously via <strong>Postmarker</strong>. 
-            To reply to this message, simply reply directly to this email address. 
+            This email was sent anonymously via <strong>Postmarker</strong>.
+            To reply to this message, simply reply directly to this email address.
             Replies will be routed securely to the sender's private dashboard.
           </div>
         </div>

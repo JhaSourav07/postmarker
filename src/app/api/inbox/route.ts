@@ -73,6 +73,12 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  // This endpoint is used only by the dev Reply Simulator.
+  // In production, replies arrive via IMAP sync — not via this POST route.
+  if (process.env.NODE_ENV !== "development") {
+    return NextResponse.json({ error: "Not found." }, { status: 404 });
+  }
+
   try {
     const body = await request.json();
     const { from, to, subject, html, text, messageId } = body;
