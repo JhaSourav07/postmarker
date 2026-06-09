@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { connectToDatabase } from "../../../lib/mongodb";
 import Thread from "../../../models/Thread";
+import Message from "../../../models/Message";
+import { sanitizeContent } from "../../../lib/validators";
 
 export async function POST(request: Request) {
   try {
@@ -35,17 +37,44 @@ export async function POST(request: Request) {
       );
     }
 
-    // 4. Verification and validation passed. Ingestion engine logic will be implemented in the next step.
+    // 4. Ingest and persist the incoming message with XSS protection and duplicate checks
+    try {
+      const message = new Message({
+        threadId: thread.threadId,
+        messageId,
+        from,
+        to,
+        subject: subject || "(No Subject)",
+        bodyHtml: html ? sanitizeContent(html) : "",
+        bodyText: text ? sanitizeContent(text) : "",
+        receivedAt: new Date(),
+        expiresAt: thread.expiresAt,
+      });
+
+      await message.save();
+    } catch (saveError: any) {
+      // Gracefully handle duplicate messageIds (code 11000) to respond 200 OK to the webhook
+      if (saveError.code === 11000) {
+        return NextResponse.json({
+          success: true,
+          message: "Message already ingested.",
+          threadId: thread.threadId,
+        });
+      }
+      throw saveError;
+    }
+
     return NextResponse.json({
       success: true,
-      message: "Verification passed. Message ingestion pending.",
+      message: "Message ingested successfully.",
       threadId: thread.threadId,
     });
   } catch (error) {
-    console.error("Error verifying inbound mail:", error);
+    console.error("Error ingesting inbound mail:", error);
     return NextResponse.json(
-      { error: "Failed to verify inbound email." },
+      { error: "Failed to ingest inbound email." },
       { status: 500 }
     );
   }
 }
+
