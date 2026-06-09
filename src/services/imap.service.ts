@@ -8,8 +8,13 @@ import { sanitizeContent } from "../lib/validators";
 
 export class ImapService {
   /**
-   * Connects to the Gmail IMAP server, queries the mailbox for emails sent to the thread's
-   * aliased email address, parses them, and persists any new messages to the database.
+   * Connects to the Gmail IMAP server, finds emails relevant to the thread,
+   * and persists any new ones to the database.
+   *
+   * Gmail IMAP quirk: Searching `TO: alias@gmail.com` often returns no results
+   * because Gmail normalises addresses internally. We use a multi-strategy
+   * approach: first search by TO, then fall back to searching recent emails
+   * and matching by subject or the alias in the body.
    */
   static async syncInboxReplies(token: string): Promise<void> {
     console.log("[IMAP Sync] Starting syncInboxReplies for token:", token);
@@ -17,130 +22,165 @@ export class ImapService {
       await connectToDatabase();
       const hashed = hashToken(token.trim());
 
-      // 1. Fetch active thread
       const thread = await Thread.findOne({
         hashedToken: hashed,
         expiresAt: { $gt: new Date() },
       });
 
       if (!thread) {
-        console.warn("[IMAP Sync] Thread not found or expired for token:", token);
+        console.warn("[IMAP Sync] Thread not found or expired.");
         return;
       }
 
-      console.log(`[IMAP Sync] Found thread ID: ${thread.threadId}, tempEmail: ${thread.tempEmail}`);
+      const tempEmail: string = thread.tempEmail;
+      const threadId: string = thread.threadId;
+      console.log(`[IMAP Sync] Thread: ${threadId}, alias: ${tempEmail}`);
 
-      // 2. Fetch IMAP Credentials from environment
       const host = process.env.IMAP_HOST || "imap.gmail.com";
-      const port = process.env.IMAP_PORT
-        ? parseInt(process.env.IMAP_PORT, 10)
-        : 993;
+      const port = process.env.IMAP_PORT ? parseInt(process.env.IMAP_PORT, 10) : 993;
       const user = process.env.IMAP_USER || process.env.SMTP_USER;
-      const pass = process.env.IMAP_PASS || process.env.SMTP_PASS;
+      const pass = (process.env.IMAP_PASS || process.env.SMTP_PASS || "").trim();
 
       if (!user || !pass) {
-        console.warn("IMAP sync skipped: Missing credentials in .env.local");
+        console.warn("[IMAP Sync] Missing credentials, skipping.");
         return;
       }
 
-      console.log(`[IMAP Sync] Using IMAP Host: ${host}:${port}, User: ${user}`);
-
-      // 3. Initialize IMAP Client
       const client = new ImapFlow({
         host,
         port,
         secure: true,
-        auth: {
-          user,
-          pass,
-        },
+        auth: { user, pass },
         logger: false,
       });
 
-      console.log("[IMAP Sync] Connecting to IMAP server...");
       await client.connect();
-      console.log("[IMAP Sync] Connected. Locking INBOX...");
+      console.log("[IMAP Sync] Connected.");
+
       const lock = await client.getMailboxLock("INBOX");
       try {
-        console.log(`[IMAP Sync] Searching for emails sent to: ${thread.tempEmail}`);
-        const uids = await client.search({
-          to: thread.tempEmail,
-        });
-        console.log("[IMAP Sync] Search returned uids:", uids);
+        let candidateUids: number[] = [];
 
-        if (!uids || uids.length === 0) {
-          console.log("[IMAP Sync] Searching for all emails in INBOX to debug...");
+        // --- Strategy 1: search by TO alias (works on some IMAP servers) ---
+        const byTo = await client.search({ to: tempEmail });
+        const byToArr = Array.isArray(byTo) ? byTo : [];
+        console.log(`[IMAP Sync] Strategy 1 (TO alias): ${byToArr.length} results`);
+        if (byToArr.length > 0) {
+          candidateUids = byToArr;
+        }
+
+        // --- Strategy 2: search for the thread ID in the subject line ---
+        if (candidateUids.length === 0) {
+          const bySubject = await client.search({ subject: threadId });
+          const bySubjectArr = Array.isArray(bySubject) ? bySubject : [];
+          console.log(`[IMAP Sync] Strategy 2 (subject contains threadId): ${bySubjectArr.length} results`);
+          if (bySubjectArr.length > 0) {
+            candidateUids = bySubjectArr;
+          }
+        }
+
+        // --- Strategy 3: scan the most recent 50 emails and match the alias in headers ---
+        if (candidateUids.length === 0) {
           const allUids = await client.search({ all: true });
-          console.log(`[IMAP Sync] Total messages in INBOX: ${allUids ? allUids.length : 0}`);
-          if (allUids && allUids.length > 0) {
-            // Get the last 10 UIDs
-            const lastUids = allUids.slice(-10);
-            console.log("[IMAP Sync] Last 10 email UIDs:", lastUids);
-            for (const uid of lastUids) {
-              const envelope = await client.fetchOne(uid, { envelope: true });
-              if (envelope) {
-                console.log(`[IMAP Sync] Debug UID ${uid} - To:`, JSON.stringify(envelope.envelope?.to), `Subject:`, envelope.envelope?.subject);
+          const allUidsArr = Array.isArray(allUids) ? allUids : [];
+          if (allUidsArr.length > 0) {
+            const recent = allUidsArr.slice(-50);
+            console.log(`[IMAP Sync] Strategy 3: scanning last ${recent.length} emails for alias match`);
+
+            const baseUser = (user || "").split("@")[0].toLowerCase();
+            const aliasLocal = tempEmail.split("@")[0].toLowerCase();
+
+            for (const uid of recent) {
+              const info = await client.fetchOne(uid, { envelope: true });
+              if (!info) continue;
+              const envelope = (info as any).envelope;
+              if (!envelope) continue;
+
+              const toList: string[] = ((envelope.to || []) as Array<{ mailbox: string; host: string }>)
+                .map((a) => `${a.mailbox}@${a.host}`.toLowerCase());
+
+              const matched = toList.some(
+                (addr: string) =>
+                  addr === tempEmail.toLowerCase() ||
+                  addr.includes(aliasLocal) ||
+                  addr.startsWith(baseUser + "+")
+              );
+
+              if (matched) {
+                candidateUids.push(uid);
               }
             }
+            console.log(`[IMAP Sync] Strategy 3 matched ${candidateUids.length} emails.`);
           }
         }
 
-        if (Array.isArray(uids)) {
-          console.log(`[IMAP Sync] Found ${uids.length} messages. Processing...`);
-          for (const uid of uids) {
-            // Fetch the message source
-            const messageSource = await client.fetchOne(uid, { source: true });
-            if (!messageSource || !messageSource.source) {
-              console.warn(`[IMAP Sync] Empty source for UID ${uid}, skipping.`);
-              continue;
-            }
-
-            // Parse raw email content
-            const parsed = await simpleParser(messageSource.source);
-            const messageId =
-              parsed.messageId || `imap-${uid}-${thread.threadId}`;
-
-            console.log(`[IMAP Sync] Processing message UID ${uid}, Message-ID: ${messageId}`);
-
-            // Verify if message is already ingested
-            const exists = await Message.findOne({ messageId });
-            if (exists) {
-              console.log(`[IMAP Sync] Message ${messageId} already exists in DB. Skipping.`);
-              continue;
-            }
-
-            // Sanitize body HTML and Text content
-            const bodyHtml = parsed.html ? sanitizeContent(parsed.html) : "";
-            const bodyText = parsed.text || "";
-
-            // Persist the message to MongoDB
-            const newMessage = new Message({
-              threadId: thread.threadId,
-              messageId,
-              from: parsed.from?.text || "Unknown Sender",
-              to: thread.tempEmail,
-              subject: parsed.subject || "(No Subject)",
-              bodyHtml,
-              bodyText,
-              receivedAt: parsed.date || new Date(),
-              expiresAt: thread.expiresAt,
-            });
-
-            await newMessage.save();
-            console.log(`[IMAP Sync] Saved new message UID ${uid} from: ${parsed.from?.text}`);
+        // --- Process all candidate messages ---
+        console.log(`[IMAP Sync] Processing ${candidateUids.length} candidate messages.`);
+        for (const uid of candidateUids) {
+          const msgData = await client.fetchOne(uid, { source: true });
+          if (!msgData) {
+            console.warn(`[IMAP Sync] Empty result for UID ${uid}, skipping.`);
+            continue;
           }
-        } else {
-          console.log("[IMAP Sync] No matching messages found (uids is not an array).");
+          const source = (msgData as any).source as Buffer | undefined;
+          if (!source) {
+            console.warn(`[IMAP Sync] Empty source for UID ${uid}, skipping.`);
+            continue;
+          }
+
+          const parsed = await simpleParser(source);
+          const messageId = parsed.messageId || `imap-${uid}-${threadId}`;
+
+          const exists = await Message.findOne({ messageId });
+          if (exists) {
+            console.log(`[IMAP Sync] Already in DB: ${messageId}`);
+            continue;
+          }
+
+          // Extra guard — make sure this message is actually relevant to this thread.
+          // Check To header, Subject, or body for the alias.
+          const toField = parsed.to;
+          const toText = (Array.isArray(toField) ? toField.map((a) => a.text).join(", ") : toField?.text ?? "").toLowerCase();
+          const subjectText = (parsed.subject || "").toLowerCase();
+          const bodyText = (parsed.text || "").toLowerCase();
+          const aliasLower = tempEmail.toLowerCase();
+          const threadIdLower = threadId.toLowerCase();
+
+          const isRelevant =
+            toText.includes(aliasLower) ||
+            toText.includes(threadIdLower) ||
+            subjectText.includes(threadIdLower) ||
+            bodyText.includes(aliasLower);
+
+          if (!isRelevant) {
+            console.log(`[IMAP Sync] UID ${uid} not relevant to this thread, skipping.`);
+            continue;
+          }
+
+          const newMsg = new Message({
+            threadId,
+            messageId,
+            from: parsed.from?.text || "Unknown Sender",
+            to: tempEmail,
+            subject: parsed.subject || "(No Subject)",
+            bodyHtml: parsed.html ? sanitizeContent(parsed.html) : "",
+            bodyText: parsed.text || "",
+            receivedAt: parsed.date || new Date(),
+            expiresAt: thread.expiresAt,
+          });
+
+          await newMsg.save();
+          console.log(`[IMAP Sync] Saved message from: ${parsed.from?.text}, subject: ${parsed.subject}`);
         }
       } finally {
-        console.log("[IMAP Sync] Releasing lock and logging out...");
         lock.release();
       }
 
       await client.logout();
-      console.log("[IMAP Sync] Logout complete.");
+      console.log("[IMAP Sync] Done.");
     } catch (error) {
-      console.error("Failed to perform Gmail IMAP sync:", error);
+      console.error("[IMAP Sync] Fatal error:", error);
+      throw error; // Re-throw so the API route can surface a proper error
     }
   }
 }

@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import { useRouter } from "next/navigation";
 import InboxHeader from "./InboxHeader";
 import ThreadSidebar from "./ThreadSidebar";
 import MessageViewer from "./MessageViewer";
@@ -31,14 +30,16 @@ export default function InboxClientForm({
   initialMessages,
   token,
 }: InboxClientFormProps) {
-  const router = useRouter();
+  // Own message state — starts with server-fetched data, updated live by IMAP sync
+  const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [selectedMsgId, setSelectedMsgId] = useState<string | null>(
     initialMessages[0]?.id || null
   );
   const [isCopied, setIsCopied] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [syncError, setSyncError] = useState<string | null>(null);
 
-  const selectedMessage = initialMessages.find((m) => m.id === selectedMsgId) || null;
+  const selectedMessage = messages.find((m) => m.id === selectedMsgId) || null;
 
   const handleCopyEmail = () => {
     navigator.clipboard.writeText(thread.tempEmail);
@@ -46,10 +47,41 @@ export default function InboxClientForm({
     setTimeout(() => setIsCopied(false), 2000);
   };
 
-  const handleRefresh = () => {
+  // Calls /api/inbox which triggers IMAP sync THEN reads updated messages from DB
+  const handleRefresh = async () => {
     setIsRefreshing(true);
-    router.refresh();
-    setTimeout(() => setIsRefreshing(false), 800);
+    setSyncError(null);
+    try {
+      const response = await fetch(`/api/inbox?token=${encodeURIComponent(token)}`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to sync inbox.");
+      }
+
+      // Update messages with freshly synced data from the API
+      const freshMessages: Message[] = data.messages.map((msg: any) => ({
+        id: msg.id,
+        from: msg.from,
+        to: msg.to,
+        subject: msg.subject,
+        bodyHtml: msg.bodyHtml,
+        bodyText: msg.bodyText,
+        receivedAt: msg.receivedAt,
+      }));
+
+      setMessages(freshMessages);
+
+      // Auto-select first message if nothing is selected or it was removed
+      if (freshMessages.length > 0 && !freshMessages.find((m) => m.id === selectedMsgId)) {
+        setSelectedMsgId(freshMessages[0].id);
+      }
+    } catch (err: any) {
+      setSyncError(err.message || "Sync failed. Please try again.");
+      console.error("Inbox sync error:", err);
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
   return (
@@ -64,11 +96,21 @@ export default function InboxClientForm({
         onRefresh={handleRefresh}
       />
 
+      {/* Sync Error Banner */}
+      {syncError && (
+        <div className="w-full px-6 py-2 bg-red-500/10 border-b border-red-500/20 text-xs text-red-400 font-mono flex items-center justify-between">
+          <span>⚠ {syncError}</span>
+          <button onClick={() => setSyncError(null)} className="text-red-400/60 hover:text-red-400 cursor-pointer">
+            Dismiss
+          </button>
+        </div>
+      )}
+
       {/* 2. Workspace Panel: Left Sidebar + Right Mail Reader */}
       <div className="flex-grow flex flex-col md:flex-row h-[calc(100vh-176px)] overflow-hidden">
         {/* Thread Sidebar */}
         <ThreadSidebar
-          messages={initialMessages}
+          messages={messages}
           selectedMsgId={selectedMsgId}
           onSelectMsg={setSelectedMsgId}
         />
