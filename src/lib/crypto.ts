@@ -1,12 +1,11 @@
 import crypto from "crypto";
 
-/**
- * Generates a secure, cryptographically strong random token (hex-encoded).
- * This will be used in the inbox access link sent to the user.
- * @returns {string} The generated secure token.
- */
 export function generateSecureToken(): string {
-  return crypto.randomBytes(32).toString("hex");
+  const hex = crypto.randomBytes(6).toString("hex").toUpperCase();
+  const part1 = hex.substring(0, 4);
+  const part2 = hex.substring(4, 8);
+  const part3 = hex.substring(8, 12);
+  return `TMP-${part1}-${part2}-${part3}`;
 }
 
 /**
