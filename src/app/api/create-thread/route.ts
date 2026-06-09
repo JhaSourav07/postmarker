@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { validateEmail } from "../../../lib/validators";
+import { ThreadService } from "../../../services/thread.service";
 
 export async function POST(request: Request) {
   try {
@@ -13,15 +14,22 @@ export async function POST(request: Request) {
       );
     }
 
-    // Input is valid. Orchestration layer will be implemented in the next step.
+    const result = await ThreadService.createNewConversation({
+      userEmail: email,
+    });
+
     return NextResponse.json({
       success: true,
-      message: "Validation passed. Orchestration pending.",
+      threadId: result.threadId,
+      tempEmail: result.tempEmail,
+      expiresAt: result.expiresAt,
     });
   } catch (error) {
+    console.error("Error creating thread:", error);
     return NextResponse.json(
-      { error: "Invalid JSON body or request error." },
-      { status: 400 }
+      { error: "Failed to create temporary inbox." },
+      { status: 500 }
     );
   }
 }
+
