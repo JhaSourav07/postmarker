@@ -32,9 +32,11 @@ export default function Features() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-100px" }}
             transition={{ duration: 0.8, delay: i * 0.15 }}
-            className="flex flex-col text-left space-y-4 p-4 rounded-xl border border-transparent hover:border-[rgba(255,255,255,0.04)] hover:bg-[#111418]/25 transition-all"
+            whileHover={{ y: -4 }}
+            className="flex flex-col text-left space-y-4 p-6 rounded-xl border border-[rgba(255,255,255,0.04)] bg-[#111418]/10 hover:bg-[#111418]/30 hover:border-[rgba(255,255,255,0.12)] transition-all duration-300 shadow-sm relative group"
           >
-            <span className="font-mono text-xs font-semibold text-neutral-500 uppercase tracking-widest">
+            <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-[rgba(255,255,255,0.1)] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            <span className="font-mono text-xs font-semibold text-neutral-500 uppercase tracking-widest group-hover:text-neutral-400 transition-colors">
               {f.num} &mdash; Principle
             </span>
             <h3 className="text-xl sm:text-2xl font-medium text-[#F8F8F8] tracking-tight">

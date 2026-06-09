@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { motion } from "framer-motion";
 
 interface Message {
   id: string;
@@ -43,7 +44,7 @@ export default function ThreadSidebar({
       </div>
 
       {/* Message List */}
-      <div className="flex-grow overflow-y-auto divide-y divide-[rgba(255,255,255,0.06)]">
+      <div className="flex-grow overflow-y-auto">
         {messages.length === 0 ? (
           <div className="p-12 text-center flex flex-col items-center justify-center h-full">
             <span className="text-xs text-[#A2A8B3] leading-relaxed">
@@ -54,32 +55,50 @@ export default function ThreadSidebar({
             </span>
           </div>
         ) : (
-          messages.map((msg) => (
-            <button
-              key={msg.id}
-              onClick={() => onSelectMsg(msg.id)}
-              className={`w-full p-5 text-left flex flex-col gap-1.5 transition-all cursor-pointer border-l-2 ${
-                selectedMsgId === msg.id
-                  ? "bg-[#111418]/60 border-neutral-300"
-                  : "bg-transparent border-transparent hover:bg-[#111418]/25"
-              }`}
-            >
-              <div className="flex justify-between items-center w-full">
-                <span className="text-xs font-semibold truncate text-[#F8F8F8] max-w-[70%]">
-                  {msg.from.split("<")[0].trim() || msg.from}
-                </span>
-                <span className="text-[9px] font-mono text-[#A2A8B3]/80">
-                  {formatTime(msg.receivedAt)}
-                </span>
-              </div>
-              <div className="text-xs font-medium text-neutral-200 truncate">
-                {msg.subject}
-              </div>
-              <div className="text-[11px] text-[#A2A8B3] truncate font-light leading-relaxed">
-                {msg.bodyText}
-              </div>
-            </button>
-          ))
+          <motion.div
+            initial="hidden"
+            animate="visible"
+            variants={{
+              visible: {
+                transition: {
+                  staggerChildren: 0.05,
+                },
+              },
+            }}
+            className="divide-y divide-[rgba(255,255,255,0.06)]"
+          >
+            {messages.map((msg) => (
+              <motion.button
+                key={msg.id}
+                variants={{
+                  hidden: { opacity: 0, x: -8 },
+                  visible: { opacity: 1, x: 0 },
+                }}
+                transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                onClick={() => onSelectMsg(msg.id)}
+                className={`w-full p-5 text-left flex flex-col gap-1.5 transition-all cursor-pointer border-l-2 ${
+                  selectedMsgId === msg.id
+                    ? "bg-[#111418]/60 border-neutral-300"
+                    : "bg-transparent border-transparent hover:bg-[#111418]/25"
+                }`}
+              >
+                <div className="flex justify-between items-center w-full">
+                  <span className="text-xs font-semibold truncate text-[#F8F8F8] max-w-[70%]">
+                    {msg.from.split("<")[0].trim() || msg.from}
+                  </span>
+                  <span className="text-[9px] font-mono text-[#A2A8B3]/80">
+                    {formatTime(msg.receivedAt)}
+                  </span>
+                </div>
+                <div className="text-xs font-medium text-neutral-200 truncate">
+                  {msg.subject}
+                </div>
+                <div className="text-[11px] text-[#A2A8B3] truncate font-light leading-relaxed">
+                  {msg.bodyText}
+                </div>
+              </motion.button>
+            ))}
+          </motion.div>
         )}
       </div>
     </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { RefreshCw, Check, Copy } from "lucide-react";
 
 interface InboxHeaderProps {
   tempEmail: string;
@@ -35,7 +36,10 @@ export default function InboxHeader({
     <div className="w-full h-16 border-b border-[rgba(255,255,255,0.08)] bg-[#111418]/60 flex items-center justify-between px-6 select-none relative z-20">
       {/* Dynamic Temporary Address Display */}
       <div className="flex items-center gap-3 min-w-0">
-        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse flex-shrink-0" />
+        <span className="relative flex h-2 w-2">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+        </span>
         <span className="text-xs font-mono font-medium text-[#A2A8B3] uppercase tracking-wider hidden sm:inline">
           Alias:
         </span>
@@ -54,18 +58,29 @@ export default function InboxHeader({
         {/* Copy Button */}
         <button
           onClick={onCopyEmail}
-          className="text-xs bg-[#111418] hover:bg-[#161A20] border border-[rgba(255,255,255,0.08)] px-3 py-1.5 rounded-lg transition-colors font-medium text-neutral-200 cursor-pointer"
+          className="flex items-center gap-1.5 text-xs bg-[#111418] hover:bg-[#161A20] border border-[rgba(255,255,255,0.08)] px-3 py-1.5 rounded-lg transition-colors font-medium text-neutral-200 cursor-pointer"
         >
-          {isCopied ? "Copied" : "Copy Alias"}
+          {isCopied ? (
+            <>
+              <Check className="w-3 h-3 text-emerald-400" />
+              <span>Copied</span>
+            </>
+          ) : (
+            <>
+              <Copy className="w-3 h-3 text-neutral-400" />
+              <span>Copy Alias</span>
+            </>
+          )}
         </button>
 
         {/* Refresh Button */}
         <button
           onClick={onRefresh}
           disabled={isRefreshing}
-          className="text-xs bg-[#F8F8F8] text-[#0B0D10] px-3 py-1.5 rounded-lg hover:bg-neutral-200 transition-colors font-semibold uppercase tracking-wider disabled:opacity-55 cursor-pointer"
+          className="flex items-center gap-1.5 text-xs bg-[#F8F8F8] text-[#0B0D10] px-3 py-1.5 rounded-lg hover:bg-neutral-200 transition-colors font-semibold uppercase tracking-wider disabled:opacity-55 cursor-pointer"
         >
-          {isRefreshing ? "Syncing..." : "Sync"}
+          <RefreshCw className={`w-3 h-3 ${isRefreshing ? "animate-spin" : ""}`} />
+          <span>{isRefreshing ? "Syncing..." : "Sync"}</span>
         </button>
       </div>
     </div>
