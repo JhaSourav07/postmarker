@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { parseApiResponse } from "../../lib/utils";
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
@@ -35,11 +36,7 @@ export default function CreateThreadPage() {
         body: JSON.stringify({ to, subject, message }),
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to send anonymous email.");
-      }
+      const data = await parseApiResponse(response);
 
       // Format token for standard display TMP-ABCD-EFGH-IJKL
       const token = data.token;

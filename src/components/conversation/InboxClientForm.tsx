@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import InboxHeader from "./InboxHeader";
 import ThreadSidebar from "./ThreadSidebar";
 import MessageViewer from "./MessageViewer";
+import { parseApiResponse } from "../../lib/utils";
 
 interface Message {
   id: string;
@@ -53,11 +54,7 @@ export default function InboxClientForm({
     setSyncError(null);
     try {
       const response = await fetch(`/api/inbox?token=${encodeURIComponent(token)}`);
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to sync inbox.");
-      }
+      const data = await parseApiResponse(response);
 
       // Update messages with freshly synced data from the API
       const freshMessages: Message[] = data.messages.map((msg: any) => ({

@@ -8,6 +8,7 @@ import Features from "../components/home/Features";
 import Workflow from "../components/home/Workflow";
 import FeedbackSection from "../components/home/FeedbackSection";
 import SuccessModal from "../components/home/SuccessModal";
+import { parseApiResponse } from "../lib/utils";
 
 export default function Home() {
   // Composer Form State
@@ -36,11 +37,7 @@ export default function Home() {
         body: JSON.stringify({ to, subject, message }),
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to dispatch email.");
-      }
+      const data = await parseApiResponse(response);
 
       setGeneratedToken(data.token);
       setShowSuccess(true);

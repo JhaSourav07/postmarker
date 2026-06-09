@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { MessageSquare, Bug, Send, CheckCircle2, Loader2 } from "lucide-react";
+import { parseApiResponse } from "../../lib/utils";
 
 export default function FeedbackSection() {
   const [type, setType] = useState<"feedback" | "bug">("feedback");
@@ -28,11 +29,7 @@ export default function FeedbackSection() {
         body: JSON.stringify({ type, name, email, message }),
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to submit feedback.");
-      }
+      const data = await parseApiResponse(response);
 
       setIsSuccess(true);
       setName("");

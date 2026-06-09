@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { motion } from "framer-motion";
+import { parseApiResponse } from "../../lib/utils";
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
@@ -44,11 +45,7 @@ export default function ReplySimulatorClient() {
         }),
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Ingestion simulation failed.");
-      }
+      const data = await parseApiResponse(response);
 
       setFeedback({
         status: "success",
