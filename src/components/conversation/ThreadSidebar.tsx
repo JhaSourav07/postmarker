@@ -32,7 +32,7 @@ export default function ThreadSidebar({
   };
 
   return (
-    <div className="w-full md:w-80 border-r border-[rgba(255,255,255,0.08)] flex flex-col bg-[#111418]/20 h-full overflow-hidden select-none">
+    <div className="w-full md:w-80 border-r border-b md:border-b-0 border-[rgba(255,255,255,0.08)] flex flex-col bg-[#111418]/20 h-[35%] md:h-full overflow-hidden select-none">
       {/* Sidebar Section Header */}
       <div className="px-6 py-4 border-b border-[rgba(255,255,255,0.08)] flex items-center justify-between bg-[#161A20]/20">
         <span className="text-xs font-semibold uppercase tracking-wider text-[#A2A8B3]">

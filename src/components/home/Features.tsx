@@ -24,7 +24,7 @@ export default function Features() {
 
   return (
     <section className="w-full py-24 md:py-32 border-t border-[rgba(255,255,255,0.06)] bg-[#0B0D10]">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-8 max-w-5xl mx-auto">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-8 max-w-5xl mx-auto px-4 md:px-6">
         {featuresList.map((f, i) => (
           <motion.div
             key={i}

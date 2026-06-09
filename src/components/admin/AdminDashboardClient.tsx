@@ -126,12 +126,12 @@ export default function AdminDashboardClient({ initialFeedbacks, adminName }: Ad
                       <span className="text-xs font-semibold text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded">Resolved</span>
                     )}
                   </div>
-                  <div className="flex items-center gap-4 text-xs text-[#A2A8B3]">
+                  <div className="flex flex-wrap items-center gap-4 text-xs text-[#A2A8B3] mt-2 md:mt-0">
                     <span className="flex items-center gap-1.5"><Mail className="w-3.5 h-3.5" /> {fb.email}</span>
                     <span className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" /> {fb.createdAt}</span>
                     
                     {/* Action Buttons */}
-                    <div className="flex items-center gap-2 ml-4">
+                    <div className="flex items-center gap-2 mt-2 md:mt-0 ml-0 md:ml-4 w-full md:w-auto justify-end">
                       {fb.status !== "resolved" && (
                         <button
                           onClick={() => handleResolve(fb.id)}

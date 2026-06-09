@@ -31,7 +31,7 @@ export default function MessageViewer({ selectedMessage }: MessageViewerProps) {
             className="flex-grow flex flex-col h-full overflow-hidden"
           >
             {/* Message Meta Header */}
-            <div className="p-8 border-b border-[rgba(255,255,255,0.08)] flex flex-col gap-3 bg-[#111418]/10 select-text">
+            <div className="p-4 md:p-8 border-b border-[rgba(255,255,255,0.08)] flex flex-col gap-3 bg-[#111418]/10 select-text">
               <div className="flex justify-between items-start gap-4">
                 <h1 className="text-xl font-medium tracking-tight text-[#F8F8F8]">
                   {selectedMessage.subject}
@@ -53,7 +53,7 @@ export default function MessageViewer({ selectedMessage }: MessageViewerProps) {
             </div>
 
             {/* Sanitized Message Body Panel */}
-            <div className="flex-grow p-8 overflow-y-auto select-text">
+            <div className="flex-grow p-4 md:p-8 overflow-y-auto select-text">
               {selectedMessage.bodyHtml ? (
                 <div
                   dangerouslySetInnerHTML={{
