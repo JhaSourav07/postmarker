@@ -4,6 +4,7 @@ import Thread from "../../../models/Thread";
 import Message from "../../../models/Message";
 import { sanitizeContent } from "../../../lib/validators";
 import { hashToken } from "../../../lib/crypto";
+import { ImapService } from "../../../services/imap.service";
 
 export async function GET(request: Request) {
   try {
@@ -31,6 +32,13 @@ export async function GET(request: Request) {
         { error: "Thread not found or has expired." },
         { status: 404 }
       );
+    }
+
+    // Sync inbound emails from Gmail IMAP first
+    try {
+      await ImapService.syncInboxReplies(token);
+    } catch (syncError) {
+      console.error("Gmail IMAP sync error during GET request:", syncError);
     }
 
     // Get all messages for this thread, newest first
