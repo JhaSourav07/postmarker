@@ -149,6 +149,63 @@ export class ImapService {
           continue;
         }
 
+        // ── Security: Verify this is a genuine reply ──────────────────────
+        // Check In-Reply-To and References headers to ensure this email is
+        // an actual reply to the original Postmarker message — NOT a signup
+        // verification, newsletter, or any unsolicited email sent directly to
+        // the alias. This prevents Postmarker from being used as a temp-mail
+        // service for website signups.
+        if (thread.sentMessageId) {
+          const inReplyTo = (parsed.inReplyTo || "").toLowerCase();
+          const references = (
+            Array.isArray(parsed.references)
+              ? parsed.references.join(" ")
+              : parsed.references || ""
+          ).toLowerCase();
+          const sentId = thread.sentMessageId.toLowerCase();
+
+          const isGenuineReply =
+            inReplyTo.includes(sentId) || references.includes(sentId);
+
+          if (!isGenuineReply) {
+            console.warn(
+              `[IMAP Sync] UID ${uid} rejected — not a reply to the original message. ` +
+              `In-Reply-To: "${inReplyTo || "none"}", sentMessageId: "${sentId}"`
+            );
+            // Mark Seen so this email is never scanned again
+            await client.messageFlagsAdd({ uid }, ["\\Seen"]).catch(() => {});
+            continue;
+          }
+        }
+
+        // ── Security: Verify sender is the person we originally emailed ──
+        // Only emails FROM the recipient we sent to are accepted.
+        // This blocks: website signups, newsletters, spam — anything not
+        // coming back from the intended conversation partner.
+        if (thread.recipientEmail) {
+          const fromAddresses = parsed.from?.value || [];
+          const fromEmails = fromAddresses.map(
+            (addr: { address?: string }) => (addr.address || "").toLowerCase()
+          );
+          const expectedSender = thread.recipientEmail.toLowerCase();
+
+          const isFromRecipient = fromEmails.some(
+            (addr: string) =>
+              addr === expectedSender ||
+              // Allow sub-addressing: john+anything@example.com still matches john@example.com
+              addr.split("+")[0] + "@" + addr.split("@")[1] === expectedSender
+          );
+
+          if (!isFromRecipient) {
+            console.warn(
+              `[IMAP Sync] UID ${uid} rejected — sender "${fromEmails.join(", ")}" ` +
+              `does not match expected recipient "${expectedSender}"`
+            );
+            await client.messageFlagsAdd({ uid }, ["\\Seen"]).catch(() => {});
+            continue;
+          }
+        }
+
         // Relevance guard — prevents cross-thread contamination in strategy 4
         const toField = parsed.to;
         const toText = (

@@ -5,6 +5,16 @@ export interface IThread extends Document {
   userEmail: string;
   tempEmail: string;
   hashedToken: string;
+  /**
+   * The email address the original message was sent TO.
+   * Used by IMAP sync to only accept replies from the intended recipient.
+   */
+  recipientEmail?: string;
+  /**
+   * The Message-ID of the original outbound email (set by Nodemailer).
+   * Used by IMAP sync to verify genuine replies via In-Reply-To / References.
+   */
+  sentMessageId?: string;
   createdAt: Date;
   updatedAt: Date;
   expiresAt: Date;
@@ -30,6 +40,14 @@ const ThreadSchema: Schema<IThread> = new Schema(
     hashedToken: {
       type: String,
       required: true,
+    },
+    sentMessageId: {
+      type: String,
+      default: null,
+    },
+    recipientEmail: {
+      type: String,
+      default: null,
     },
     expiresAt: {
       type: Date,

@@ -56,6 +56,7 @@ export class ThreadService {
       userEmail: "anonymous@postmarker.com",
       tempEmail,
       hashedToken,
+      recipientEmail: options.recipientEmail.toLowerCase().trim(),
       expiresAt,
     });
 
@@ -87,7 +88,13 @@ export class ThreadService {
     };
 
     try {
-      await transporter.sendMail(mailOptions);
+      const info = await transporter.sendMail(mailOptions);
+      // Store the outbound Message-ID so IMAP sync can verify genuine replies
+      // via the In-Reply-To / References headers.
+      if (info.messageId) {
+        thread.sentMessageId = info.messageId;
+        await thread.save();
+      }
     } catch (emailError) {
       console.error("Failed to dispatch anonymous SMTP email:", emailError);
       // We still persist the thread so the user gets their dashboard key,
