@@ -3,11 +3,72 @@ import { connectToDatabase } from "../../../lib/mongodb";
 import Thread from "../../../models/Thread";
 import Message from "../../../models/Message";
 import { sanitizeContent } from "../../../lib/validators";
+import { hashToken } from "../../../lib/crypto";
+
+export async function GET(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const token = searchParams.get("token");
+
+    if (!token) {
+      return NextResponse.json(
+        { error: "Token query parameter is required." },
+        { status: 400 }
+      );
+    }
+
+    await connectToDatabase();
+    const hashed = hashToken(token.trim());
+
+    // Find valid, active thread
+    const thread = await Thread.findOne({
+      hashedToken: hashed,
+      expiresAt: { $gt: new Date() },
+    });
+
+    if (!thread) {
+      return NextResponse.json(
+        { error: "Thread not found or has expired." },
+        { status: 404 }
+      );
+    }
+
+    // Get all messages for this thread, newest first
+    const messages = await Message.find({ threadId: thread.threadId }).sort({
+      receivedAt: -1,
+    });
+
+    return NextResponse.json({
+      success: true,
+      thread: {
+        threadId: thread.threadId,
+        tempEmail: thread.tempEmail,
+        expiresAt: thread.expiresAt,
+      },
+      messages: messages.map((msg) => ({
+        id: msg._id.toString(),
+        from: msg.from,
+        to: msg.to,
+        subject: msg.subject,
+        bodyHtml: msg.bodyHtml,
+        bodyText: msg.bodyText,
+        receivedAt: msg.receivedAt,
+      })),
+    });
+  } catch (error) {
+    console.error("Error retrieving inbox messages:", error);
+    return NextResponse.json(
+      { error: "Failed to retrieve messages." },
+      { status: 500 }
+    );
+  }
+}
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { from, to, subject, html, text, messageId } = body;
+
 
     // 1. Basic validation of request payload
     if (!from || !to || !messageId) {
