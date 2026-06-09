@@ -2,34 +2,7 @@ import { connectToDatabase } from "../../../lib/mongodb";
 import { hashToken } from "../../../lib/crypto";
 import Thread from "../../../models/Thread";
 import Message from "../../../models/Message";
-// Stub component to be replaced by the standalone component in the next step
-function InboxClientForm({
-  thread,
-  initialMessages,
-  token,
-}: {
-  thread: { threadId: string; tempEmail: string; expiresAt: string };
-  initialMessages: Array<{
-    id: string;
-    from: string;
-    to: string;
-    subject: string;
-    bodyHtml: string;
-    bodyText: string;
-    receivedAt: string;
-  }>;
-  token: string;
-}) {
-  return (
-    <div className="min-h-[calc(100vh-112px)] bg-[#0B0D10] text-[#F8F8F8] p-8 max-w-4xl mx-auto w-full">
-      <h2 className="text-2xl font-semibold mb-2">Inbox Dashboard</h2>
-      <p className="text-xs text-[#A2A8B3] mb-8">Address: {thread.tempEmail}</p>
-      <div className="border border-[rgba(255,255,255,0.08)] rounded-xl p-6 bg-[#111418]/60 text-center">
-        <p className="text-sm text-[#A2A8B3]">No messages in inbox</p>
-      </div>
-    </div>
-  );
-}
+import InboxClientForm from "../../../components/conversation/InboxClientForm";
 
 
 interface InboxPageProps {
