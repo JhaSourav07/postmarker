@@ -13,9 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "PostMarker | Secure Temporary Email Inboxes",
-  description: "Instantly create secure, disposable temporary email inboxes to protect your privacy and test inbound emails with absolute security.",
-  keywords: ["temporary email", "disposable email", "spam protection", "developer tools", "inbox testing"],
+  title: "Postmarker | Email without identity",
+  description: "Send anonymous emails and access replies using a secret token.",
 };
 
 export default function RootLayout({
@@ -28,39 +27,35 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col font-sans">
-        {/* Sleek Header */}
-        <header className="sticky top-0 z-50 w-full border-b border-neutral-900 bg-neutral-950/70 backdrop-blur-md">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="h-9 w-9 rounded-lg bg-indigo-600 flex items-center justify-center font-bold text-lg text-white shadow-lg shadow-indigo-500/20">
-                P
-              </div>
-              <span className="font-semibold text-lg tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-neutral-200 to-neutral-400">
-                PostMarker
-              </span>
-            </div>
-            <nav className="flex items-center gap-6 text-sm font-medium text-neutral-400">
-              <a href="/" className="hover:text-white transition-colors">Home</a>
-              <a href="/create" className="hover:text-white transition-colors">Create Inbox</a>
-              <a href="/inbox/reply-simulator" className="hover:text-white transition-colors">Simulator</a>
-            </nav>
+      <body className="min-h-screen bg-[#0B0D10] text-[#F8F8F8] flex flex-col font-sans selection:bg-[#F8F8F8]/10 selection:text-[#F8F8F8]">
+        {/* Minimalist Navbar */}
+        <header className="w-full border-b border-[rgba(255,255,255,0.08)] bg-[#0B0D10]/80 backdrop-blur-md sticky top-0 z-50">
+          <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+            <a href="/" className="font-semibold text-lg tracking-tight hover:text-[#F8F8F8]/85 transition-colors">
+              Postmarker
+            </a>
+            <a 
+              href="#view-conversation" 
+              className="text-sm font-medium text-[#A2A8B3] hover:text-[#F8F8F8] transition-colors"
+            >
+              View Conversation
+            </a>
           </div>
         </header>
 
-        {/* Content Wrapper */}
+        {/* Main Workspace */}
         <main className="flex-grow flex flex-col">
           {children}
         </main>
 
-        {/* Premium Footer */}
-        <footer className="border-t border-neutral-900 bg-neutral-950 py-8">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-neutral-500">
-            <div>
-              &copy; {new Date().getFullYear()} PostMarker. All rights reserved.
+        {/* Minimal Footer */}
+        <footer className="w-full border-t border-[rgba(255,255,255,0.08)] bg-[#0B0D10] py-12">
+          <div className="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#A2A8B3]">
+            <div className="font-semibold text-[#F8F8F8]">
+              Postmarker
             </div>
-            <div className="flex items-center gap-6">
-              <span>Secure. Temporary. Ephemeral.</span>
+            <div>
+              Email without identity.
             </div>
           </div>
         </footer>
