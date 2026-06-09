@@ -64,6 +64,7 @@ export class ThreadService {
     // Dispatch the anonymous email to the recipient
     const mailOptions = {
       from: `"Anonymous" <${tempEmail}>`,
+      replyTo: tempEmail,
       to: options.recipientEmail,
       subject: options.subject || "(No Subject)",
       text: options.message,
