@@ -19,3 +19,13 @@ export function hashToken(token: string): string {
   return crypto.createHash("sha256").update(token).digest("hex");
 }
 
+/**
+ * Generates a unique thread identifier prefix (e.g. for generating temporary email addresses).
+ * We use a random 6-byte hex value (12 characters).
+ * @returns {string} The generated thread ID.
+ */
+export function generateThreadId(): string {
+  return crypto.randomBytes(6).toString("hex");
+}
+
+
