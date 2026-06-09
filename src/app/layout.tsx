@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { SpeedInsights } from '@vercel/speed-insights/next';
-import BackgroundAnimation from "../components/ui/BackgroundAnimation";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -30,9 +29,6 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-screen bg-[#0B0D10] text-[#F8F8F8] font-sans selection:bg-[#F8F8F8]/10 selection:text-[#F8F8F8]">
-        
-        {/* Global Background Animation Layer (z-0) */}
-        <BackgroundAnimation />
 
         {/* Foreground Content Layer (z-10) */}
         <div className="relative z-10 flex flex-col min-h-screen">

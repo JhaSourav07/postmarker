@@ -6,6 +6,7 @@ import Hero from "../components/home/Hero";
 import ComposerCard from "../components/home/ComposerCard";
 import Features from "../components/home/Features";
 import Workflow from "../components/home/Workflow";
+import FeedbackSection from "../components/home/FeedbackSection";
 import SuccessModal from "../components/home/SuccessModal";
 
 export default function Home() {
@@ -84,6 +85,9 @@ export default function Home() {
 
         {/* Workflow Lifecycle Grid */}
         <Workflow />
+
+        {/* Feedback Section */}
+        <FeedbackSection />
       </div>
 
       {/* Success Modal overlay */}
