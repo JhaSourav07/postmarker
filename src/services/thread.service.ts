@@ -36,10 +36,16 @@ export class ThreadService {
     const hashedToken = hashToken(plainToken);
     const threadId = generateThreadId();
 
-    // Derives domain from configured SMTP sender or defaults to yourdomain.com
+    // Derives domain or constructs Gmail address using alias (+threadId) formatting
     const fromEmail = process.env.SMTP_FROM || "postmarker@yourdomain.com";
-    const domain = fromEmail.split("@")[1] || "yourdomain.com";
-    const tempEmail = `${threadId}@${domain}`;
+    let tempEmail = "";
+    if (fromEmail.toLowerCase().includes("gmail.com")) {
+      const localPart = fromEmail.split("@")[0];
+      tempEmail = `${localPart}+${threadId}@gmail.com`;
+    } else {
+      const domain = fromEmail.split("@")[1] || "yourdomain.com";
+      tempEmail = `${threadId}@${domain}`;
+    }
 
     // Default to 7 days (168 hours) lifecycle
     const expiryHours = options.expiryHours || 168;
