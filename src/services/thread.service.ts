@@ -61,12 +61,18 @@ export class ThreadService {
 
     await thread.save();
 
-    // Dispatch the anonymous email to the recipient
+    // Dispatch the anonymous email to the recipient.
+    // Custom headers are preserved by email clients on Reply, enabling fast IMAP lookup.
     const mailOptions = {
       from: `"Anonymous" <${tempEmail}>`,
       replyTo: tempEmail,
       to: options.recipientEmail,
       subject: options.subject || "(No Subject)",
+      // Custom headers — email clients preserve these in replies
+      headers: {
+        "X-PostMarker-Thread-ID": threadId,
+        "X-Thread-ID": threadId,
+      },
       text: options.message,
       html: `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid rgba(0,0,0,0.08); border-radius: 8px;">
