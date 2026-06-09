@@ -52,6 +52,16 @@ export class ThreadService {
 
     await thread.save();
 
+    // Trigger sending the inbox access link via email service
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const inboxLink = `${baseUrl}/inbox/${plainToken}`;
+
+    await EmailService.sendInboxAccessLink({
+      toEmail: options.userEmail,
+      tempEmail,
+      inboxLink,
+    });
+
     return {
       threadId,
       tempEmail,
