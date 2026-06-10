@@ -1,5 +1,6 @@
 import NextAuth, { AuthOptions } from "next-auth";
 import GithubProvider from "next-auth/providers/github";
+import { Logger } from "../../../../lib/logger";
 
 export const authOptions: AuthOptions = {
   providers: [
@@ -13,7 +14,7 @@ export const authOptions: AuthOptions = {
       const adminUsername = process.env.ADMIN_GITHUB_USERNAME;
       
       if (!adminUsername) {
-        console.error("ADMIN_GITHUB_USERNAME is not set in environment variables.");
+        Logger.error("AUTH", "ADMIN_GITHUB_USERNAME is not set in environment variables.");
         return false;
       }
 
@@ -21,10 +22,11 @@ export const authOptions: AuthOptions = {
       // profile.login is provided by the GitHub OAuth scope
       const githubProfile = profile as any;
       if (githubProfile?.login && githubProfile.login.toLowerCase() === adminUsername.toLowerCase()) {
+        Logger.info("AUTH", `Admin user signed in successfully: ${githubProfile.login}`);
         return true;
       }
       
-      console.warn(`Unauthorized login attempt by GitHub user: ${githubProfile?.login}`);
+      Logger.warn("AUTH", `Unauthorized login attempt by GitHub user: ${githubProfile?.login}`);
       return false; // Reject anyone else
     },
     async session({ session, token }) {

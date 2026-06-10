@@ -8,6 +8,7 @@ import Thread, { IThread } from "../models/Thread";
 import Message, { IMessage } from "../models/Message";
 import { transporter } from "../lib/email";
 import { escapeHtml } from "../lib/validators";
+import { Logger } from "../lib/logger";
 
 export interface CreateThreadOptions {
   recipientEmail: string;
@@ -61,6 +62,7 @@ export class ThreadService {
       expiresAt,
     });
 
+    Logger.info("SMTP", `Saving new thread: ${threadId} | Temp: ${tempEmail} | Recipient: ${options.recipientEmail}`);
     await thread.save();
 
     // Dispatch the anonymous email to the recipient.
@@ -95,9 +97,10 @@ export class ThreadService {
       if (info.messageId) {
         thread.sentMessageId = info.messageId;
         await thread.save();
+        Logger.info("SMTP", `Anonymous SMTP email successfully sent. Message-ID: ${info.messageId}`);
       }
     } catch (emailError) {
-      console.error("Failed to dispatch anonymous SMTP email:", emailError);
+      Logger.error("SMTP", "Failed to dispatch anonymous SMTP email:", emailError);
       // We still persist the thread so the user gets their dashboard key,
       // but log the delivery failure.
     }

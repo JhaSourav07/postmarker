@@ -5,6 +5,7 @@ import Message from "../../../models/Message";
 import { sanitizeContent } from "../../../lib/validators";
 import { hashToken } from "../../../lib/crypto";
 import { ImapService } from "../../../services/imap.service";
+import { Logger } from "../../../lib/logger";
 
 export async function GET(request: Request) {
   try {
@@ -36,9 +37,10 @@ export async function GET(request: Request) {
 
     // Sync inbound emails from Gmail IMAP first
     try {
+      Logger.info("API", `Triggering IMAP sync for token prefix: ${token.slice(0, 8)}...`);
       await ImapService.syncInboxReplies(token);
     } catch (syncError) {
-      console.error("Gmail IMAP sync error during GET request:", syncError);
+      Logger.error("API", "Gmail IMAP sync error during GET request:", syncError);
     }
 
     // Get all messages for this thread, newest first
@@ -64,7 +66,7 @@ export async function GET(request: Request) {
       })),
     });
   } catch (error) {
-    console.error("Error retrieving inbox messages:", error);
+    Logger.error("API", "Error retrieving inbox messages:", error);
     return NextResponse.json(
       { error: "Failed to retrieve messages." },
       { status: 500 }
@@ -139,13 +141,14 @@ export async function POST(request: Request) {
       throw saveError;
     }
 
+    Logger.info("API", `Ingested inbound email messageId: ${messageId} for thread: ${thread.threadId}`);
     return NextResponse.json({
       success: true,
       message: "Message ingested successfully.",
       threadId: thread.threadId,
     });
   } catch (error) {
-    console.error("Error ingesting inbound mail:", error);
+    Logger.error("API", "Error ingesting inbound mail:", error);
     return NextResponse.json(
       { error: "Failed to ingest inbound email." },
       { status: 500 }
@@ -197,13 +200,14 @@ export async function PATCH(request: Request) {
       { $set: { expiresAt: newExpiresAt } }
     );
 
+    Logger.info("API", `Extended thread lifespan. Thread: ${thread.threadId} | New Expiry: ${newExpiresAt.toISOString()}`);
     return NextResponse.json({
       success: true,
       message: "Thread expiration extended successfully.",
       expiresAt: newExpiresAt.toISOString(),
     });
   } catch (error) {
-    console.error("Error extending thread expiration:", error);
+    Logger.error("API", "Error extending thread expiration:", error);
     return NextResponse.json(
       { error: "Failed to extend thread expiration." },
       { status: 500 }
@@ -245,12 +249,13 @@ export async function DELETE(request: Request) {
     await Thread.deleteOne({ _id: thread._id });
     await Message.deleteMany({ threadId });
 
+    Logger.warn("API", `Self-destruct: Permanently deleted thread ${threadId} and all associated messages.`);
     return NextResponse.json({
       success: true,
       message: "Thread and all associated messages have been permanently deleted.",
     });
   } catch (error) {
-    console.error("Error deleting thread:", error);
+    Logger.error("API", "Error deleting thread:", error);
     return NextResponse.json(
       { error: "Failed to delete thread." },
       { status: 500 }

@@ -4,6 +4,7 @@ import Thread from "../../../models/Thread";
 import Message from "../../../models/Message";
 import { transporter } from "../../../lib/email";
 import { ImapFlow } from "imapflow";
+import { Logger } from "../../../lib/logger";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +17,7 @@ export async function GET() {
   let smtpError: string | null = null;
   let imapError: string | null = null;
 
+  Logger.info("STATUS", "Executing system connectivity health checks...");
   try {
     // 1. Database Connection & Metrics
     await connectToDatabase();
@@ -29,7 +31,7 @@ export async function GET() {
       expiresAt: { $gt: new Date() },
     });
   } catch (err: any) {
-    console.error("Status API: DB check failed:", err);
+    Logger.error("STATUS", "Database check failed:", err);
   }
 
   // 2. SMTP Connectivity Check
@@ -38,7 +40,7 @@ export async function GET() {
     smtpStatus = true;
   } catch (err: any) {
     smtpError = err.message || String(err);
-    console.error("Status API: SMTP verification failed:", err);
+    Logger.error("STATUS", "SMTP verification failed:", err);
   }
 
   // 3. IMAP Connectivity Check
@@ -65,7 +67,7 @@ export async function GET() {
     }
   } catch (err: any) {
     imapError = err.message || String(err);
-    console.error("Status API: IMAP connection failed:", err);
+    Logger.error("STATUS", "IMAP connection failed:", err);
   }
 
   return NextResponse.json({

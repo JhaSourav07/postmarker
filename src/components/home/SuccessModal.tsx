@@ -51,8 +51,8 @@ export default function SuccessModal({
             onClick={onCopy}
             className="bg-[#0B0D10] border border-[rgba(255,255,255,0.06)] hover:border-neutral-700 rounded-lg py-4 px-4 mb-8 select-all font-mono text-sm tracking-wider text-neutral-100 flex items-center justify-between cursor-pointer group transition-colors"
           >
-            <span>{token}</span>
-            <span className="text-[10px] text-neutral-600 group-hover:text-neutral-400 uppercase tracking-widest transition-colors font-sans">
+            <span className="break-all pr-4 text-left">{token}</span>
+            <span className="text-[10px] text-neutral-600 group-hover:text-neutral-400 uppercase tracking-widest transition-colors font-sans flex-shrink-0">
               {isCopied ? "Copied" : "Copy"}
             </span>
           </div>

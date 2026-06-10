@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { validateEmail } from "../../../lib/validators";
 import { ThreadService } from "../../../services/thread.service";
 import { checkRateLimit, getClientIp } from "../../../lib/rateLimit";
+import { Logger } from "../../../lib/logger";
 
 export async function POST(request: Request) {
   // ── Rate limiting: 5 threads per IP per 15 minutes ──────────────────────
@@ -10,6 +11,7 @@ export async function POST(request: Request) {
 
   if (!allowed) {
     const retryAfterSecs = Math.ceil((resetAt - Date.now()) / 1000);
+    Logger.warn("API", `Rate limit hit for IP: ${ip}. Blocked thread creation.`);
     return NextResponse.json(
       { error: "Too many requests. Please wait before sending another email." },
       {
@@ -70,6 +72,8 @@ export async function POST(request: Request) {
       message: message.trim(),
     });
 
+    Logger.info("API", `Thread created successfully: ${result.threadId} (Recipient: ${to.trim()})`);
+
     return NextResponse.json(
       {
         success: true,
@@ -86,7 +90,7 @@ export async function POST(request: Request) {
       }
     );
   } catch (error) {
-    console.error("Error creating anonymous thread:", error);
+    Logger.error("API", "Error creating anonymous thread:", error);
     return NextResponse.json(
       { error: "Failed to send anonymous email." },
       { status: 500 }

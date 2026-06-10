@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "../../../auth/[...nextauth]/route";
 import { connectToDatabase } from "../../../../../lib/mongodb";
 import Feedback from "../../../../../models/Feedback";
+import { Logger } from "../../../../../lib/logger";
 
 export async function PATCH(
   request: Request,
@@ -28,9 +29,10 @@ export async function PATCH(
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
+    Logger.info("ADMIN", `Updated feedback status: ${id} to ${body.status}`);
     return NextResponse.json({ success: true, feedback: updatedFeedback });
   } catch (error) {
-    console.error("Error updating feedback:", error);
+    Logger.error("ADMIN", "Error updating feedback:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
@@ -54,9 +56,10 @@ export async function DELETE(
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
+    Logger.warn("ADMIN", `Permanently deleted feedback: ${id}`);
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Error deleting feedback:", error);
+    Logger.error("ADMIN", "Error deleting feedback:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

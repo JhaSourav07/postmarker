@@ -178,8 +178,8 @@ export default function CreateThreadPage() {
               </p>
 
               {/* Token Display Box */}
-              <div className="bg-[#161A20] border border-[rgba(255,255,255,0.08)] rounded-lg py-4 px-2 mb-8 select-all">
-                <span className="font-mono text-lg text-[#F8F8F8] tracking-wider">
+              <div className="bg-[#161A20] border border-[rgba(255,255,255,0.08)] rounded-lg py-4 px-4 mb-8 select-all">
+                <span className="font-mono text-base text-[#F8F8F8] tracking-wider break-all block">
                   {successData.token}
                 </span>
               </div>

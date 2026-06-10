@@ -3,6 +3,7 @@ import { connectToDatabase } from "../../../lib/mongodb";
 import Feedback from "../../../models/Feedback";
 import { sanitizeContent, validateEmail } from "../../../lib/validators";
 import { checkRateLimit, getClientIp } from "../../../lib/rateLimit";
+import { Logger } from "../../../lib/logger";
 
 export async function POST(request: Request) {
   // ── Rate limiting: 3 feedbacks per IP per 1 hour ──────────────────────
@@ -74,6 +75,7 @@ export async function POST(request: Request) {
     });
 
     await newFeedback.save();
+    Logger.info("FEEDBACK", `New feedback submitted successfully. Type: ${type} | Name: ${safeName || "Anonymous"}`);
 
     return NextResponse.json(
       { success: true },
@@ -86,7 +88,7 @@ export async function POST(request: Request) {
       }
     );
   } catch (error) {
-    console.error("Error submitting feedback:", error);
+    Logger.error("FEEDBACK", "Error submitting feedback:", error);
     return NextResponse.json(
       { error: "Failed to submit feedback." },
       { status: 500 }

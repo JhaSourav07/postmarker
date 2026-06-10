@@ -5,6 +5,7 @@ import { hashToken } from "../lib/crypto";
 import Thread from "../models/Thread";
 import Message from "../models/Message";
 import { sanitizeContent } from "../lib/validators";
+import { Logger } from "../lib/logger";
 
 export class ImapService {
   /**
@@ -20,7 +21,7 @@ export class ImapService {
    * server so future sync calls skip it instantly.
    */
   static async syncInboxReplies(token: string): Promise<void> {
-    console.log("[IMAP Sync] Starting for token:", token);
+    Logger.info("IMAP", `Starting sync for token: ${token.slice(0, 8)}...`);
 
     await connectToDatabase();
     const hashed = hashToken(token.trim());
@@ -31,13 +32,13 @@ export class ImapService {
     });
 
     if (!thread) {
-      console.warn("[IMAP Sync] Thread not found or expired.");
+      Logger.warn("IMAP", "Thread not found or expired.");
       return;
     }
 
     const tempEmail: string = thread.tempEmail;
     const threadId: string = thread.threadId;
-    console.log(`[IMAP Sync] Thread: ${threadId} | alias: ${tempEmail}`);
+    Logger.info("IMAP", `Thread: ${threadId} | alias: ${tempEmail}`);
 
     const host = process.env.IMAP_HOST || "imap.gmail.com";
     const port = process.env.IMAP_PORT ? parseInt(process.env.IMAP_PORT, 10) : 993;
@@ -45,7 +46,7 @@ export class ImapService {
     const pass = (process.env.IMAP_PASS || process.env.SMTP_PASS || "").trim();
 
     if (!user || !pass) {
-      console.warn("[IMAP Sync] Missing IMAP credentials — skipping.");
+      Logger.warn("IMAP", "Missing IMAP credentials — skipping sync.");
       return;
     }
 
@@ -58,7 +59,7 @@ export class ImapService {
     });
 
     await client.connect();
-    console.log("[IMAP Sync] Connected to IMAP server.");
+    Logger.info("IMAP", "Connected to IMAP server.");
 
     const lock = await client.getMailboxLock("INBOX");
     try {
@@ -70,7 +71,7 @@ export class ImapService {
         header: { "X-PostMarker-Thread-ID": threadId },
       });
       const byHeader1Arr = Array.isArray(byHeader1) ? byHeader1 : [];
-      console.log(`[IMAP Sync] S1 (X-PostMarker-Thread-ID): ${byHeader1Arr.length} hits`);
+      Logger.debug("IMAP", `S1 (X-PostMarker-Thread-ID): ${byHeader1Arr.length} hits`);
       if (byHeader1Arr.length > 0) candidateUids = byHeader1Arr;
 
       // Strategy 2: fallback header X-Thread-ID
@@ -79,7 +80,7 @@ export class ImapService {
           header: { "X-Thread-ID": threadId },
         });
         const byHeader2Arr = Array.isArray(byHeader2) ? byHeader2 : [];
-        console.log(`[IMAP Sync] S2 (X-Thread-ID): ${byHeader2Arr.length} hits`);
+        Logger.debug("IMAP", `S2 (X-Thread-ID): ${byHeader2Arr.length} hits`);
         if (byHeader2Arr.length > 0) candidateUids = byHeader2Arr;
       }
 
@@ -87,7 +88,7 @@ export class ImapService {
       if (candidateUids.length === 0) {
         const byTo = await client.search({ to: tempEmail });
         const byToArr = Array.isArray(byTo) ? byTo : [];
-        console.log(`[IMAP Sync] S3 (TO alias): ${byToArr.length} hits`);
+        Logger.debug("IMAP", `S3 (TO alias): ${byToArr.length} hits`);
         if (byToArr.length > 0) candidateUids = byToArr;
       }
 
@@ -95,7 +96,7 @@ export class ImapService {
       if (candidateUids.length === 0) {
         const bySubject = await client.search({ subject: threadId });
         const bySubjectArr = Array.isArray(bySubject) ? bySubject : [];
-        console.log(`[IMAP Sync] S4 (subject): ${bySubjectArr.length} hits`);
+        Logger.debug("IMAP", `S4 (subject): ${bySubjectArr.length} hits`);
         if (bySubjectArr.length > 0) candidateUids = bySubjectArr;
       }
 
@@ -117,7 +118,7 @@ export class ImapService {
         const allUids = await client.search({ all: true });
         const allUidsArr = Array.isArray(allUids) ? allUids : [];
         recent = allUidsArr.slice(-50);
-        console.log(`[IMAP Sync] S5 scanning ${recent.length} recent emails`);
+        Logger.info("IMAP", `S5 scanning ${recent.length} recent emails`);
 
         const baseUser = (user || "").split("@")[0].toLowerCase();
         const aliasLocal = tempEmail.split("@")[0].toLowerCase();
@@ -145,11 +146,11 @@ export class ImapService {
             }
           }
         }
-        console.log(`[IMAP Sync] S5 matched ${candidateUids.length} emails`);
+        Logger.info("IMAP", `S5 matched ${candidateUids.length} emails`);
       }
 
       // ── Processing phase ──────────────────────────────────────────────────
-      console.log(`[IMAP Sync] Processing ${candidateUids.length} candidates`);
+      Logger.info("IMAP", `Processing ${candidateUids.length} candidates`);
 
       // Fetch all candidate envelopes in bulk to check duplicates by Message-ID first
       const envelopesMap = new Map<number, string>();
@@ -168,7 +169,7 @@ export class ImapService {
         // Skip already-ingested messages
         const exists = await Message.findOne({ messageId });
         if (exists) {
-          console.log(`[IMAP Sync] Already in DB: ${messageId}`);
+          Logger.debug("IMAP", `Already in DB: ${messageId}`);
           // Ensure it is marked Seen on IMAP server
           await client.messageFlagsAdd({ uid }, ["\\Seen"]).catch(() => {});
           continue;
@@ -176,12 +177,12 @@ export class ImapService {
 
         const msgData = await client.fetchOne(uid, { source: true });
         if (!msgData) {
-          console.warn(`[IMAP Sync] No data for UID ${uid}, skipping.`);
+          Logger.warn("IMAP", `No data for UID ${uid}, skipping.`);
           continue;
         }
         const source = (msgData as any).source as Buffer | undefined;
         if (!source) {
-          console.warn(`[IMAP Sync] Empty source for UID ${uid}, skipping.`);
+          Logger.warn("IMAP", `Empty source for UID ${uid}, skipping.`);
           continue;
         }
 
@@ -206,8 +207,9 @@ export class ImapService {
             inReplyTo.includes(sentId) || references.includes(sentId);
 
           if (!isGenuineReply) {
-            console.warn(
-              `[IMAP Sync] UID ${uid} rejected — not a reply to the original message. ` +
+            Logger.warn(
+              "IMAP",
+              `UID ${uid} rejected — not a reply to the original message. ` +
               `In-Reply-To: "${inReplyTo || "none"}", sentMessageId: "${sentId}"`
             );
             // Mark Seen so this email is never scanned again
@@ -235,8 +237,9 @@ export class ImapService {
           );
 
           if (!isFromRecipient) {
-            console.warn(
-              `[IMAP Sync] UID ${uid} rejected — sender "${fromEmails.join(", ")}" ` +
+            Logger.warn(
+              "IMAP",
+              `UID ${uid} rejected — sender "${fromEmails.join(", ")}" ` +
               `does not match expected recipient "${expectedSender}"`
             );
             await client.messageFlagsAdd({ uid }, ["\\Seen"]).catch(() => {});
@@ -265,7 +268,7 @@ export class ImapService {
           byHeader1Arr.includes(uid);
 
         if (!isRelevant) {
-          console.log(`[IMAP Sync] UID ${uid} not relevant to this thread — skipping.`);
+          Logger.debug("IMAP", `UID ${uid} not relevant to this thread — skipping.`);
           continue;
         }
 
@@ -283,15 +286,15 @@ export class ImapService {
         });
 
         await newMsg.save();
-        console.log(`[IMAP Sync] ✓ Saved message from: ${parsed.from?.text}`);
+        Logger.info("IMAP", `✓ Saved message from: ${parsed.from?.text}`);
 
         // Mark as \Seen on the server — future syncs skip this immediately
         try {
           await client.messageFlagsAdd({ uid }, ["\\Seen"]);
-          console.log(`[IMAP Sync] Marked UID ${uid} as \\Seen`);
+          Logger.debug("IMAP", `Marked UID ${uid} as \\Seen`);
         } catch (flagError) {
           // Non-fatal — the message is saved; we just couldn't mark it
-          console.warn(`[IMAP Sync] Failed to mark UID ${uid} as \\Seen:`, flagError);
+          Logger.warn("IMAP", `Failed to mark UID ${uid} as \\Seen: ${flagError instanceof Error ? flagError.message : String(flagError)}`);
         }
       }
     } finally {
@@ -299,6 +302,6 @@ export class ImapService {
     }
 
     await client.logout();
-    console.log("[IMAP Sync] Complete.");
+    Logger.info("IMAP", "Sync Complete.");
   }
 }

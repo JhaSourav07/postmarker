@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { connectToDatabase } from "../../../lib/mongodb";
 import Thread from "../../../models/Thread";
 import Message from "../../../models/Message";
+import { Logger } from "../../../lib/logger";
 
 function checkAuth(request: Request): boolean {
   const cronSecret = process.env.CRON_SECRET;
@@ -11,10 +12,14 @@ function checkAuth(request: Request): boolean {
 }
 
 async function runCleanup() {
+  Logger.info("CLEANUP", "Running database TTL sweep and pruning expired records...");
   await connectToDatabase();
   const now = new Date();
   const deletedThreads = await Thread.deleteMany({ expiresAt: { $lte: now } });
   const deletedMessages = await Message.deleteMany({ expiresAt: { $lte: now } });
+  
+  Logger.info("CLEANUP", `Sweep completed. Purged ${deletedThreads.deletedCount} threads and ${deletedMessages.deletedCount} messages.`);
+  
   return {
     success: true,
     deletedThreadsCount: deletedThreads.deletedCount,
@@ -31,7 +36,7 @@ export async function GET(request: Request) {
     const result = await runCleanup();
     return NextResponse.json(result);
   } catch (error) {
-    console.error("Cleanup error:", error);
+    Logger.error("CLEANUP", "Cleanup error during GET request:", error);
     return NextResponse.json(
       { error: "Failed to perform database cleanup." },
       { status: 500 }
@@ -48,7 +53,7 @@ export async function POST(request: Request) {
     const result = await runCleanup();
     return NextResponse.json(result);
   } catch (error) {
-    console.error("Cleanup error:", error);
+    Logger.error("CLEANUP", "Cleanup error during POST request:", error);
     return NextResponse.json(
       { error: "Failed to perform database cleanup." },
       { status: 500 }
