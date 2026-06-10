@@ -122,31 +122,58 @@ export class ImapService {
         const baseUser = (user || "").split("@")[0].toLowerCase();
         const aliasLocal = tempEmail.split("@")[0].toLowerCase();
 
-        for (const uid of recent) {
-          const info = await client.fetchOne(uid, { envelope: true });
-          if (!info) continue;
-          const envelope = (info as any).envelope;
-          if (!envelope) continue;
+        if (recent.length > 0) {
+          // Fetch all envelopes in a single bulk request to prevent IMAP rate limit burning
+          const fetchStream = await client.fetch(recent, { envelope: true }, { uid: true });
+          
+          for await (const msg of fetchStream) {
+            const envelope = msg.envelope;
+            if (!envelope) continue;
 
-          const toList: string[] = (
-            (envelope.to || []) as Array<{ mailbox: string; host: string }>
-          ).map((a) => `${a.mailbox}@${a.host}`.toLowerCase());
+            const toList: string[] = (
+              (envelope.to || []) as Array<{ mailbox: string; host: string }>
+            ).map((a) => `${a.mailbox}@${a.host}`.toLowerCase());
 
-          const matched = toList.some(
-            (addr: string) =>
-              addr === tempEmail.toLowerCase() ||
-              addr.includes(aliasLocal) ||
-              addr.startsWith(baseUser + "+")
-          );
-          if (matched) candidateUids.push(uid);
+            const matched = toList.some(
+              (addr: string) =>
+                addr === tempEmail.toLowerCase() ||
+                addr.includes(aliasLocal) ||
+                addr.startsWith(baseUser + "+")
+            );
+            if (matched && msg.uid) {
+              candidateUids.push(msg.uid);
+            }
+          }
         }
-        console.log(`[IMAP Sync] S4 matched ${candidateUids.length} emails`);
+        console.log(`[IMAP Sync] S5 matched ${candidateUids.length} emails`);
       }
 
       // ── Processing phase ──────────────────────────────────────────────────
       console.log(`[IMAP Sync] Processing ${candidateUids.length} candidates`);
 
+      // Fetch all candidate envelopes in bulk to check duplicates by Message-ID first
+      const envelopesMap = new Map<number, string>();
+      if (candidateUids.length > 0) {
+        const fetchStream = await client.fetch(candidateUids, { envelope: true }, { uid: true });
+        for await (const msg of fetchStream) {
+          if (msg.envelope?.messageId && msg.uid) {
+            envelopesMap.set(msg.uid, msg.envelope.messageId);
+          }
+        }
+      }
+
       for (const uid of candidateUids) {
+        const messageId = envelopesMap.get(uid) || `imap-${uid}-${threadId}`;
+
+        // Skip already-ingested messages
+        const exists = await Message.findOne({ messageId });
+        if (exists) {
+          console.log(`[IMAP Sync] Already in DB: ${messageId}`);
+          // Ensure it is marked Seen on IMAP server
+          await client.messageFlagsAdd({ uid }, ["\\Seen"]).catch(() => {});
+          continue;
+        }
+
         const msgData = await client.fetchOne(uid, { source: true });
         if (!msgData) {
           console.warn(`[IMAP Sync] No data for UID ${uid}, skipping.`);
@@ -159,16 +186,6 @@ export class ImapService {
         }
 
         const parsed = await simpleParser(source);
-        const messageId = parsed.messageId || `imap-${uid}-${threadId}`;
-
-        // Skip already-ingested messages
-        const exists = await Message.findOne({ messageId });
-        if (exists) {
-          console.log(`[IMAP Sync] Already in DB: ${messageId}`);
-          // Mark Seen so we don't touch it in future scans
-          await client.messageFlagsAdd({ uid }, ["\\Seen"]);
-          continue;
-        }
 
         // ── Security: Verify this is a genuine reply ──────────────────────
         // Check In-Reply-To and References headers to ensure this email is
