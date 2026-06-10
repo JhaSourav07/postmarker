@@ -153,3 +153,108 @@ export async function POST(request: Request) {
   }
 }
 
+export async function PATCH(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const token = searchParams.get("token");
+
+    if (!token) {
+      return NextResponse.json(
+        { error: "Token query parameter is required." },
+        { status: 400 }
+      );
+    }
+
+    await connectToDatabase();
+    const hashed = hashToken(token.trim());
+
+    // Find active, unexpired thread
+    const thread = await Thread.findOne({
+      hashedToken: hashed,
+      expiresAt: { $gt: new Date() },
+    });
+
+    if (!thread) {
+      return NextResponse.json(
+        { error: "Thread not found or has expired." },
+        { status: 404 }
+      );
+    }
+
+    // Define new expiry: now + 7 days
+    const sevenDaysFromNow = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    // Limit maximum lifetime to 14 days from original thread creation
+    const maxExpiry = new Date(thread.createdAt.getTime() + 14 * 24 * 60 * 60 * 1000);
+    
+    const newExpiresAt = sevenDaysFromNow > maxExpiry ? maxExpiry : sevenDaysFromNow;
+
+    // Save thread and its associated messages
+    thread.expiresAt = newExpiresAt;
+    await thread.save();
+
+    await Message.updateMany(
+      { threadId: thread.threadId },
+      { $set: { expiresAt: newExpiresAt } }
+    );
+
+    return NextResponse.json({
+      success: true,
+      message: "Thread expiration extended successfully.",
+      expiresAt: newExpiresAt.toISOString(),
+    });
+  } catch (error) {
+    console.error("Error extending thread expiration:", error);
+    return NextResponse.json(
+      { error: "Failed to extend thread expiration." },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const token = searchParams.get("token");
+
+    if (!token) {
+      return NextResponse.json(
+        { error: "Token query parameter is required." },
+        { status: 400 }
+      );
+    }
+
+    await connectToDatabase();
+    const hashed = hashToken(token.trim());
+
+    // Find active, unexpired thread
+    const thread = await Thread.findOne({
+      hashedToken: hashed,
+      expiresAt: { $gt: new Date() },
+    });
+
+    if (!thread) {
+      return NextResponse.json(
+        { error: "Thread not found or has expired." },
+        { status: 404 }
+      );
+    }
+
+    const threadId = thread.threadId;
+
+    // Delete the thread and all associated messages
+    await Thread.deleteOne({ _id: thread._id });
+    await Message.deleteMany({ threadId });
+
+    return NextResponse.json({
+      success: true,
+      message: "Thread and all associated messages have been permanently deleted.",
+    });
+  } catch (error) {
+    console.error("Error deleting thread:", error);
+    return NextResponse.json(
+      { error: "Failed to delete thread." },
+      { status: 500 }
+    );
+  }
+}
+

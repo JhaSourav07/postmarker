@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { RefreshCw, Check, Copy } from "lucide-react";
+import { RefreshCw, Check, Copy, Settings } from "lucide-react";
 
 interface InboxHeaderProps {
   tempEmail: string;
@@ -10,6 +10,7 @@ interface InboxHeaderProps {
   isRefreshing: boolean;
   onCopyEmail: () => void;
   onRefresh: () => void;
+  token: string;
 }
 
 export default function InboxHeader({
@@ -19,6 +20,7 @@ export default function InboxHeader({
   isRefreshing,
   onCopyEmail,
   onRefresh,
+  token,
 }: InboxHeaderProps) {
   // Format expiration date string
   const formatExpiry = (isoString: string) => {
@@ -72,6 +74,15 @@ export default function InboxHeader({
             </>
           )}
         </button>
+
+        {/* Settings Button */}
+        <a
+          href={`/inbox/${token}/settings`}
+          className="flex items-center gap-1.5 text-xs bg-[#111418] hover:bg-[#161A20] border border-[rgba(255,255,255,0.08)] px-3 py-1.5 rounded-lg transition-colors font-medium text-neutral-200 cursor-pointer"
+        >
+          <Settings className="w-3.5 h-3.5 text-neutral-400" />
+          <span className="hidden sm:inline">Settings</span>
+        </a>
 
         {/* Refresh Button */}
         <button

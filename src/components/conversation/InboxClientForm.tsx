@@ -91,6 +91,7 @@ export default function InboxClientForm({
         isRefreshing={isRefreshing}
         onCopyEmail={handleCopyEmail}
         onRefresh={handleRefresh}
+        token={token}
       />
 
       {/* Sync Error Banner */}

@@ -56,8 +56,16 @@ export default function RootLayout({
           {/* Minimal Footer */}
           <footer className="w-full border-t border-[rgba(255,255,255,0.08)] bg-[#0B0D10]/50 backdrop-blur-sm py-12">
             <div className="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#A2A8B3]">
-              <div className="font-semibold text-[#F8F8F8]">
-                Postmarker
+              <div className="flex items-center gap-6">
+                <span className="font-semibold text-[#F8F8F8]">
+                  Postmarker
+                </span>
+                <a href="/security" className="hover:text-[#F8F8F8] transition-colors">
+                  Security Center
+                </a>
+                <a href="/status" className="hover:text-[#F8F8F8] transition-colors">
+                  Uptime Status
+                </a>
               </div>
               <div>
                 Email without identity.
