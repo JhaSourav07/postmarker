@@ -17,6 +17,16 @@ describe("Validator Utilities", () => {
       expect(validateEmail("email.example.com")).toBe(false);
       expect(validateEmail("email@example@example.com")).toBe(false);
     });
+
+    it("should return false for email addresses with leading/trailing spaces", () => {
+      expect(validateEmail(" user@example.com")).toBe(false);
+      expect(validateEmail("user@example.com ")).toBe(false);
+    });
+
+    it("should return false for empty strings", () => {
+      expect(validateEmail("")).toBe(false);
+      expect(validateEmail("   ")).toBe(false);
+    });
   });
 
   describe("escapeHtml", () => {
@@ -28,6 +38,15 @@ describe("Validator Utilities", () => {
       const input = `<div>Hello & "Welcome" 'guest'</div>`;
       const expected = `&lt;div&gt;Hello &amp; &quot;Welcome&quot; &#x27;guest&#x27;&lt;/div&gt;`;
       expect(escapeHtml(input)).toBe(expected);
+    });
+
+    it("should return the string unmodified if there are no HTML special characters", () => {
+      expect(escapeHtml("Hello World 123!")).toBe("Hello World 123!");
+    });
+
+    it("should correctly escape multiple occurrences of the same special character", () => {
+      expect(escapeHtml("&&&&")).toBe("&amp;&amp;&amp;&amp;");
+      expect(escapeHtml("<<<<")).toBe("&lt;&lt;&lt;&lt;");
     });
   });
 

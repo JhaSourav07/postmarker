@@ -42,6 +42,10 @@ export function checkRateLimit(
   const now = Date.now();
   const entry = store.get(ip);
 
+  if (limit <= 0) {
+    return { allowed: false, remaining: 0, resetAt: entry ? entry.resetAt : now + windowMs };
+  }
+
   if (!entry || entry.resetAt <= now) {
     // New window
     store.set(ip, { count: 1, resetAt: now + windowMs });

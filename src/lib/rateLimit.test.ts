@@ -39,6 +39,40 @@ describe("Rate Limiter Utilities", () => {
       expect(third.remaining).toBe(0);
     });
 
+    it("should block immediately if limit is 0", () => {
+      const ip = "192.168.1.9";
+      const result = checkRateLimit(ip, 0, 1000);
+      expect(result.allowed).toBe(false);
+      expect(result.remaining).toBe(0);
+    });
+
+    it("should block immediately if limit is 0 and an entry exists, preserving the entry's resetAt time", () => {
+      const ip = "192.168.1.99";
+      const first = checkRateLimit(ip, 5, 5000);
+      expect(first.allowed).toBe(true);
+
+      const second = checkRateLimit(ip, 0, 5000);
+      expect(second.allowed).toBe(false);
+      expect(second.resetAt).toBe(first.resetAt);
+    });
+
+    it("should not modify or extend resetAt time when blocking subsequent requests", () => {
+      const ip = "192.168.1.10";
+      const first = checkRateLimit(ip, 1, 5000);
+      expect(first.allowed).toBe(true);
+      
+      const second = checkRateLimit(ip, 1, 5000);
+      expect(second.allowed).toBe(false);
+      expect(second.resetAt).toBe(first.resetAt);
+
+      // Advance slightly but within window
+      vi.advanceTimersByTime(2000);
+
+      const third = checkRateLimit(ip, 1, 5000);
+      expect(third.allowed).toBe(false);
+      expect(third.resetAt).toBe(first.resetAt);
+    });
+
     it("should reset rate limit window after windowMs passes", () => {
       const ip = "192.168.1.3";
       
@@ -89,6 +123,23 @@ describe("Rate Limiter Utilities", () => {
       expect(getClientIp(req)).toBe("203.0.113.195");
     });
 
+    it("should handle multiple x-forwarded-for IPs with leading/trailing whitespaces", () => {
+      const req = new Request("http://localhost", {
+        headers: { "x-forwarded-for": "  192.168.5.5  ,  10.0.0.1 " },
+      });
+      expect(getClientIp(req)).toBe("192.168.5.5");
+    });
+
+    it("should fallback to x-real-ip if x-forwarded-for is empty or whitespace-only", () => {
+      const req = new Request("http://localhost", {
+        headers: {
+          "x-forwarded-for": "   ",
+          "x-real-ip": "172.16.0.2",
+        },
+      });
+      expect(getClientIp(req)).toBe("172.16.0.2");
+    });
+
     it("should fallback to x-real-ip header if x-forwarded-for is missing", () => {
       const req = new Request("http://localhost", {
         headers: { "x-real-ip": "198.51.100.10" },
@@ -99,6 +150,13 @@ describe("Rate Limiter Utilities", () => {
     it("should fallback to local loopback IP if headers are missing", () => {
       const req = new Request("http://localhost");
       expect(getClientIp(req)).toBe("127.0.0.1");
+    });
+
+    it("should be case-insensitive for header names", () => {
+      const req = new Request("http://localhost", {
+        headers: { "X-FORWARDED-FOR": "8.8.8.8" },
+      });
+      expect(getClientIp(req)).toBe("8.8.8.8");
     });
   });
 });
