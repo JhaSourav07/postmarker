@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 
 const springConfig = { damping: 30, stiffness: 90, mass: 0.6 };
 
 export default function HeroScene() {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [hoveredCard, setHoveredCard] = useState<number | null>(null);
 
   // Motion values for tracking cursor offset relative to the scene container center (-0.5 to 0.5)
   const mouseX = useMotionValue(0);
@@ -138,9 +139,19 @@ export default function HeroScene() {
 
         {/* Card 1: Message Card */}
         <motion.div
-          animate={{ y: [0, -6, 0] }}
-          transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute left-[15px] top-[10px] w-[290px] bg-[#111418]/65 backdrop-blur-md border border-[rgba(255,255,255,0.06)] rounded-xl shadow-[0_20px_40px_rgba(0,0,0,0.4)] p-4 text-left"
+          onMouseEnter={() => setHoveredCard(1)}
+          onMouseLeave={() => setHoveredCard(null)}
+          animate={{
+            y: [0, -6, 0],
+            scale: hoveredCard === 1 ? 1.08 : hoveredCard === null ? 1 : 0.94,
+            opacity: hoveredCard === 1 ? 1 : hoveredCard === null ? 1 : 0.35,
+          }}
+          transition={{
+            y: { duration: 5, repeat: Infinity, ease: "easeInOut" },
+            scale: { type: "spring", stiffness: 300, damping: 25 },
+            opacity: { duration: 0.25, ease: "easeOut" },
+          }}
+          className="absolute left-[15px] top-[10px] w-[290px] bg-[#111418]/65 backdrop-blur-md border border-[rgba(255,255,255,0.06)] rounded-xl shadow-[0_20px_40px_rgba(0,0,0,0.4)] p-4 text-left cursor-pointer"
           style={{
             transform: "translateZ(30px) rotateX(10deg) rotateY(-18deg) rotateZ(3deg)",
             transformStyle: "preserve-3d",
@@ -177,9 +188,19 @@ export default function HeroScene() {
 
         {/* Card 2: Token Card (Center Piece - Larger & Styled to look highly valuable) */}
         <motion.div
-          animate={{ y: [0, 6, 0] }}
-          transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
-          className="absolute left-[75px] top-[190px] w-[310px] bg-[#161A20]/80 backdrop-blur-lg border border-[rgba(255,255,255,0.12)] rounded-xl shadow-[0_25px_50px_rgba(0,0,0,0.5)] p-5 text-left overflow-hidden group"
+          onMouseEnter={() => setHoveredCard(2)}
+          onMouseLeave={() => setHoveredCard(null)}
+          animate={{
+            y: [0, 6, 0],
+            scale: hoveredCard === 2 ? 1.08 : hoveredCard === null ? 1 : 0.94,
+            opacity: hoveredCard === 2 ? 1 : hoveredCard === null ? 1 : 0.35,
+          }}
+          transition={{
+            y: { duration: 6, repeat: Infinity, ease: "easeInOut", delay: 0.5 },
+            scale: { type: "spring", stiffness: 300, damping: 25 },
+            opacity: { duration: 0.25, ease: "easeOut" },
+          }}
+          className="absolute left-[75px] top-[190px] w-[310px] bg-[#161A20]/80 backdrop-blur-lg border border-[rgba(255,255,255,0.12)] rounded-xl shadow-[0_25px_50px_rgba(0,0,0,0.5)] p-5 text-left overflow-hidden group cursor-pointer"
           style={{
             transform: "translateZ(55px) rotateX(8deg) rotateY(-15deg) rotateZ(1deg)",
             transformStyle: "preserve-3d",
@@ -231,9 +252,19 @@ export default function HeroScene() {
 
         {/* Card 3: Reply Card */}
         <motion.div
-          animate={{ y: [0, -5, 0] }}
-          transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-          className="absolute left-[30px] top-[380px] w-[290px] bg-[#111418]/65 backdrop-blur-md border border-[rgba(255,255,255,0.06)] rounded-xl shadow-[0_20px_40px_rgba(0,0,0,0.4)] p-4 text-left"
+          onMouseEnter={() => setHoveredCard(3)}
+          onMouseLeave={() => setHoveredCard(null)}
+          animate={{
+            y: [0, -5, 0],
+            scale: hoveredCard === 3 ? 1.08 : hoveredCard === null ? 1 : 0.94,
+            opacity: hoveredCard === 3 ? 1 : hoveredCard === null ? 1 : 0.35,
+          }}
+          transition={{
+            y: { duration: 5.5, repeat: Infinity, ease: "easeInOut", delay: 1 },
+            scale: { type: "spring", stiffness: 300, damping: 25 },
+            opacity: { duration: 0.25, ease: "easeOut" },
+          }}
+          className="absolute left-[30px] top-[380px] w-[290px] bg-[#111418]/65 backdrop-blur-md border border-[rgba(255,255,255,0.06)] rounded-xl shadow-[0_20px_40px_rgba(0,0,0,0.4)] p-4 text-left cursor-pointer"
           style={{
             transform: "translateZ(30px) rotateX(12deg) rotateY(-20deg) rotateZ(4deg)",
             transformStyle: "preserve-3d",
