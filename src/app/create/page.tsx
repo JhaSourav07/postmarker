@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { parseApiResponse } from "../../lib/utils";
+import SlideButton from "../../components/ui/slide-button";
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
@@ -20,8 +21,7 @@ export default function CreateThreadPage() {
   } | null>(null);
   const [isCopied, setIsCopied] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const triggerSubmit = async () => {
     if (!to || !subject || !message) return;
 
     setIsSending(true);
@@ -38,11 +38,8 @@ export default function CreateThreadPage() {
 
       const data = await parseApiResponse(response);
 
-      // Format token for standard display TMP-ABCD-EFGH-IJKL
-      const token = data.token;
-      
       setSuccessData({
-        token,
+        token: data.token,
         tempEmail: data.tempEmail,
         expiresAt: new Date(data.expiresAt).toLocaleDateString([], {
           month: "short",
@@ -57,6 +54,14 @@ export default function CreateThreadPage() {
       setIsSending(false);
     }
   };
+
+  const status = isSending
+    ? "loading"
+    : successData
+    ? "success"
+    : errorMessage
+    ? "error"
+    : "idle";
 
   const handleCopyToken = () => {
     if (!successData) return;
@@ -102,7 +107,7 @@ export default function CreateThreadPage() {
                 </div>
               )}
 
-              <form onSubmit={handleSubmit} className="space-y-6">
+              <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
                 {/* To Field */}
                 <div className="flex flex-col sm:flex-row sm:items-center border-b border-[rgba(255,255,255,0.06)] pb-4 gap-2">
                   <label className="text-sm font-medium text-[#A2A8B3] w-20">
@@ -113,7 +118,10 @@ export default function CreateThreadPage() {
                     required
                     placeholder="recipient@example.com"
                     value={to}
-                    onChange={(e) => setTo(e.target.value)}
+                    onChange={(e) => {
+                      setTo(e.target.value);
+                      if (errorMessage) setErrorMessage("");
+                    }}
                     className="flex-grow bg-transparent text-sm text-[#F8F8F8] placeholder-neutral-700 outline-none w-full"
                   />
                 </div>
@@ -128,7 +136,10 @@ export default function CreateThreadPage() {
                     required
                     placeholder="Secret message"
                     value={subject}
-                    onChange={(e) => setSubject(e.target.value)}
+                    onChange={(e) => {
+                      setSubject(e.target.value);
+                      if (errorMessage) setErrorMessage("");
+                    }}
                     className="flex-grow bg-transparent text-sm text-[#F8F8F8] placeholder-neutral-700 outline-none w-full"
                   />
                 </div>
@@ -140,20 +151,21 @@ export default function CreateThreadPage() {
                     rows={6}
                     placeholder="Write your email anonymously..."
                     value={message}
-                    onChange={(e) => setMessage(e.target.value)}
+                    onChange={(e) => {
+                      setMessage(e.target.value);
+                      if (errorMessage) setErrorMessage("");
+                    }}
                     className="w-full bg-transparent text-sm text-[#F8F8F8] placeholder-neutral-700 outline-none resize-none pt-2"
                   />
                 </div>
 
                 {/* Submit button */}
                 <div className="flex justify-end pt-2">
-                  <button
-                    type="submit"
-                    disabled={isSending}
-                    className="bg-[#F8F8F8] text-[#0B0D10] font-medium px-6 py-3 rounded-lg hover:bg-neutral-200 transition-colors text-sm disabled:opacity-50 cursor-pointer"
-                  >
-                    {isSending ? "Sending Securely..." : "Send Anonymous Email"}
-                  </button>
+                  <SlideButton
+                    status={status}
+                    onSlideComplete={triggerSubmit}
+                    disabled={!to || !subject || !message}
+                  />
                 </div>
               </form>
             </motion.div>
