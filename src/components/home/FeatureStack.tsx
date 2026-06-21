@@ -113,19 +113,19 @@ function DesktopStackCard({ index, card, progress }: DesktopStackCardProps) {
 
   if (index === 0) {
     scale = useTransform(progress, [0, 0.33, 0.66, 1.0], [1, 0.96, 0.92, 0.88]);
-    opacity = useTransform(progress, [0, 0.33, 0.66, 1.0], [1, 0.55, 0.25, 0.1]);
+    opacity = 1;
     y = useTransform(progress, [0, 0.33, 0.66, 1.0], [0, -16, -32, -48]);
   } else if (index === 1) {
     scale = useTransform(progress, [0, 0.33, 0.66, 1.0], [1, 1, 0.96, 0.92]);
-    opacity = useTransform(progress, [0, 0.33, 0.66, 1.0], [0, 1, 0.55, 0.25]);
+    opacity = useTransform(progress, [0, 0.33], [0, 1]);
     y = useTransform(progress, [0, 0.33, 0.66, 1.0], [450, 0, -16, -32]);
   } else if (index === 2) {
     scale = useTransform(progress, [0, 0.33, 0.66, 1.0], [1, 1, 1, 0.96]);
-    opacity = useTransform(progress, [0, 0.33, 0.66, 1.0], [0, 0, 1, 0.55]);
+    opacity = useTransform(progress, [0.33, 0.66], [0, 1]);
     y = useTransform(progress, [0, 0.33, 0.66, 1.0], [450, 450, 0, -16]);
   } else if (index === 3) {
     scale = 1;
-    opacity = useTransform(progress, [0, 0.66, 1.0], [0, 0, 1]);
+    opacity = useTransform(progress, [0.66, 1.0], [0, 1]);
     y = useTransform(progress, [0, 0.66, 1.0], [450, 450, 0]);
   }
 
