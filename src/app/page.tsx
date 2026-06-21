@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import Hero from "../components/home/Hero";
 import ComposerCard from "../components/home/ComposerCard";
-import Features from "../components/home/Features";
+import FeatureSection from "../components/home/FeatureSection";
 import Workflow from "../components/home/Workflow";
 import FeedbackSection from "../components/home/FeedbackSection";
 import SuccessModal from "../components/home/SuccessModal";
@@ -59,7 +59,7 @@ export default function Home() {
   };
 
   return (
-    <div className="relative min-h-screen bg-[#0B0D10] text-[#F8F8F8] overflow-x-hidden flex flex-col items-center pb-12">
+    <div className="relative min-h-screen bg-[#0B0D10] text-[#F8F8F8] flex flex-col items-center pb-12">
       {/* Main Container */}
       <div className="w-full max-w-6xl px-6 relative z-10 flex flex-col items-center">
         {/* Hero Section */}
@@ -78,9 +78,12 @@ export default function Home() {
             onSend={handleSend}
           />
         </div>
+      </div>
 
-        {/* Editorial Feature Grid */}
-        <Features />
+      {/* Editorial Scroll Stack Feature Section */}
+      <FeatureSection />
+
+      <div className="w-full max-w-6xl px-6 relative z-10 flex flex-col items-center">
 
         {/* Workflow Lifecycle Grid */}
         <Workflow />

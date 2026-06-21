@@ -29,7 +29,7 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-screen bg-[#0B0D10] text-[#F8F8F8] font-sans selection:bg-[#F8F8F8]/10 selection:text-[#F8F8F8]">
+      <body className="min-h-screen bg-[#0B0D10] text-[#F8F8F8] font-sans selection:bg-[#F8F8F8]/10 selection:text-[#F8F8F8] overflow-x-hidden">
 
         {/* Foreground Content Layer (z-10) */}
         <div className="relative z-10 flex flex-col min-h-screen">
