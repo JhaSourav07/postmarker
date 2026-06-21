@@ -66,16 +66,18 @@ export default function Home() {
         <Hero />
 
         {/* Composer Card Section */}
-        <ComposerCard
-          to={to}
-          setTo={setTo}
-          subject={subject}
-          setSubject={setSubject}
-          message={message}
-          setMessage={setMessage}
-          isSending={isSending}
-          onSend={handleSend}
-        />
+        <div id="composer-section" className="w-full max-w-2xl flex justify-center scroll-mt-24">
+          <ComposerCard
+            to={to}
+            setTo={setTo}
+            subject={subject}
+            setSubject={setSubject}
+            message={message}
+            setMessage={setMessage}
+            isSending={isSending}
+            onSend={handleSend}
+          />
+        </div>
 
         {/* Editorial Feature Grid */}
         <Features />
