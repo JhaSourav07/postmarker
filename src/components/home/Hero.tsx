@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { motion } from "framer-motion";
+import Link from "next/link";
 import HeroScene from "./HeroScene";
 
 const ease = [0.16, 1, 0.3, 1] as const;
@@ -68,14 +69,12 @@ export default function Hero() {
 
         {/* Actions */}
         <motion.div variants={itemVariants} className="flex flex-wrap items-center justify-center lg:justify-start gap-4">
-          <button
-            onClick={() => {
-              document.getElementById("composer-section")?.scrollIntoView({ behavior: "smooth" });
-            }}
+          <Link
+            href="/create"
             className="bg-[#F8F8F8] text-[#0B0D10] font-semibold text-xs uppercase tracking-wider px-6 py-3.5 rounded-lg hover:bg-neutral-200 active:scale-[0.98] transition-all cursor-pointer inline-flex items-center gap-2"
           >
             Start Conversation
-          </button>
+          </Link>
           
           <a
             href={GITHUB_URL}

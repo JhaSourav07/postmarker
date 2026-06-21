@@ -1,109 +1,30 @@
 "use client";
 
-import React, { useState } from "react";
-import { AnimatePresence } from "framer-motion";
+import React from "react";
 import Hero from "../components/home/Hero";
-import ComposerCard from "../components/home/ComposerCard";
 import FeatureSection from "../components/home/FeatureSection";
 import Workflow from "../components/home/Workflow";
 import FeedbackSection from "../components/home/FeedbackSection";
-import SuccessModal from "../components/home/SuccessModal";
-import { parseApiResponse } from "../lib/utils";
 
 export default function Home() {
-  // Composer Form State
-  const [to, setTo] = useState("");
-  const [subject, setSubject] = useState("");
-  const [message, setMessage] = useState("");
-  const [isSending, setIsSending] = useState(false);
-
-  // Success Modal State
-  const [showSuccess, setShowSuccess] = useState(false);
-  const [generatedToken, setGeneratedToken] = useState("");
-  const [isCopied, setIsCopied] = useState(false);
-
-  // Handle Live Send
-  const handleSend = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!to || !subject || !message) return;
-
-    setIsSending(true);
-    try {
-      const response = await fetch("/api/create-thread", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ to, subject, message }),
-      });
-
-      const data = await parseApiResponse(response);
-
-      setGeneratedToken(data.token);
-      setShowSuccess(true);
-      setTo("");
-      setSubject("");
-      setMessage("");
-    } catch (err: any) {
-      alert(err.message || "An unexpected error occurred.");
-    } finally {
-      setIsSending(false);
-    }
-  };
-
-  // Handle Copy Token
-  const handleCopyToken = () => {
-    navigator.clipboard.writeText(generatedToken);
-    setIsCopied(true);
-    setTimeout(() => setIsCopied(false), 2000);
-  };
-
   return (
     <div className="relative min-h-screen bg-[#0B0D10] text-[#F8F8F8] flex flex-col items-center pb-12">
       {/* Main Container */}
       <div className="w-full max-w-6xl px-6 relative z-10 flex flex-col items-center">
         {/* Hero Section */}
         <Hero />
-
-        {/* Composer Card Section */}
-        <div id="composer-section" className="w-full max-w-2xl flex justify-center scroll-mt-24">
-          <ComposerCard
-            to={to}
-            setTo={setTo}
-            subject={subject}
-            setSubject={setSubject}
-            message={message}
-            setMessage={setMessage}
-            isSending={isSending}
-            onSend={handleSend}
-          />
-        </div>
       </div>
 
       {/* Editorial Scroll Stack Feature Section */}
       <FeatureSection />
 
       <div className="w-full max-w-6xl px-6 relative z-10 flex flex-col items-center">
-
         {/* Workflow Lifecycle Grid */}
         <Workflow />
 
         {/* Feedback Section */}
         <FeedbackSection />
       </div>
-
-      {/* Success Modal overlay */}
-      <AnimatePresence>
-        {showSuccess && (
-          <SuccessModal
-            isOpen={showSuccess}
-            token={generatedToken}
-            isCopied={isCopied}
-            onCopy={handleCopyToken}
-            onClose={() => setShowSuccess(false)}
-          />
-        )}
-      </AnimatePresence>
     </div>
   );
 }

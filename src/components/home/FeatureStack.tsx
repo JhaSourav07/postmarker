@@ -58,43 +58,43 @@ export default function FeatureStack({ cards, onActiveIndexChange }: FeatureStac
     }
   });
 
-  if (!isDesktop) {
-    // Mobile Layout: Sequential natural stack with simple viewport reveal
-    return (
-      <div className="flex flex-col space-y-8 w-full mt-12 md:mt-0">
-        {cards.map((card, i) => (
-          <motion.div
-            key={i}
-            initial={{ opacity: 0, y: 40 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-80px" }}
-            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-            className="w-full"
-          >
-            <FeatureCard
-              title={card.title}
-              description={card.description}
-              visual={card.visual}
-            />
-          </motion.div>
-        ))}
-      </div>
-    );
-  }
-
-  // Desktop Layout: Stacking deck bound to container's scroll progress
   return (
-    <div ref={containerRef} className="relative w-full h-[240vh]">
-      <div className="sticky top-[120px] h-[550px] w-full flex items-center justify-center">
-        {cards.map((card, i) => (
-          <DesktopStackCard
-            key={i}
-            index={i}
-            card={card}
-            progress={scrollYProgress}
-          />
-        ))}
-      </div>
+    <div ref={containerRef} className="w-full relative">
+      {!isDesktop ? (
+        // Mobile Layout: Sequential natural stack with simple viewport reveal
+        <div className="flex flex-col space-y-8 w-full mt-12 md:mt-0">
+          {cards.map((card, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 40 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-80px" }}
+              transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+              className="w-full"
+            >
+              <FeatureCard
+                title={card.title}
+                description={card.description}
+                visual={card.visual}
+              />
+            </motion.div>
+          ))}
+        </div>
+      ) : (
+        // Desktop Layout: Stacking deck bound to container's scroll progress
+        <div className="relative w-full h-[240vh]">
+          <div className="sticky top-[120px] h-[550px] w-full flex items-center justify-center">
+            {cards.map((card, i) => (
+              <DesktopStackCard
+                key={i}
+                index={i}
+                card={card}
+                progress={scrollYProgress}
+              />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
